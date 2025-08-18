@@ -45,22 +45,76 @@
                     </div>
     </div>
 
-    <script>
-        // Generate QR Code
-        document.addEventListener('DOMContentLoaded', function() {
-            const qrCodeElement = document.getElementById('qrcode');
-            const targetUrl = 'https://saudia-origin-demo.onrender.com/game';
-            
-            // Create QR code using QRCode.js
-            new QRCode(qrCodeElement, {
-                text: targetUrl,
-                width: 192,
-                height: 192,
-                colorDark: '#006400',
-                colorLight: '#FFFFFF',
-                correctLevel: QRCode.CorrectLevel.H
-            });
-        });
-    </script>
+                    <script>
+                    // WebSocket connection for form submission detection
+                    const ws = new WebSocket(`ws://${window.location.host}`);
+                    
+                    ws.onopen = function() {
+                        console.log('WebSocket connected to index page');
+                    };
+                    
+                    ws.onmessage = function(event) {
+                        const message = JSON.parse(event.data);
+                        if (message.type === 'form-submitted') {
+                            console.log('Form submitted detected, redirecting to game:', message.data);
+                            
+                            // Show notification
+                            showNotification('Form submitted! Redirecting to game...');
+                            
+                            // Redirect to game after 1 second
+                            setTimeout(() => {
+                                window.location.href = '/game.html';
+                            }, 1000);
+                        }
+                    };
+                    
+                    ws.onerror = function(error) {
+                        console.error('WebSocket error:', error);
+                    };
+                    
+                    ws.onclose = function() {
+                        console.log('WebSocket disconnected from index page');
+                    };
+                    
+                    // Function to show notification
+                    function showNotification(message) {
+                        // Create notification element
+                        const notification = document.createElement('div');
+                        notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
+                        notification.textContent = message;
+                        
+                        // Add to page
+                        document.body.appendChild(notification);
+                        
+                        // Animate in
+                        setTimeout(() => {
+                            notification.classList.remove('translate-x-full');
+                        }, 100);
+                        
+                        // Remove after 3 seconds
+                        setTimeout(() => {
+                            notification.classList.add('translate-x-full');
+                            setTimeout(() => {
+                                document.body.removeChild(notification);
+                            }, 300);
+                        }, 3000);
+                    }
+                    
+                    // Generate QR Code
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const qrCodeElement = document.getElementById('qrcode');
+                        const targetUrl = 'https://saudia-origin-demo.onrender.com/form.html';
+                        
+                        // Create QR code using QRCode.js
+                        new QRCode(qrCodeElement, {
+                            text: targetUrl,
+                            width: 192,
+                            height: 192,
+                            colorDark: '#006400',
+                            colorLight: '#FFFFFF',
+                            correctLevel: QRCode.CorrectLevel.H
+                        });
+                    });
+                </script>
 </body>
 </html>
