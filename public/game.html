@@ -34,11 +34,17 @@
             </button>
         </div>
 
-        <!-- Countdown Screen -->
-        <div id="countdownScreen" class="hidden text-center bg-white/90 backdrop-blur-md rounded-3xl p-8 shadow-2xl border-2 border-saudia-green/20 max-w-4xl w-full relative z-20">
-            <h2 class="text-3xl font-bold text-saudia-green mb-4">Game akan dimulai dalam:</h2>
-            <div id="countdownTimer" class="text-6xl font-bold text-saudia-green">3</div>
-        </div>
+                            <!-- Countdown Screen -->
+                    <div id="countdownScreen" class="hidden text-center bg-white/90 backdrop-blur-md rounded-3xl p-8 shadow-2xl border-2 border-saudia-green/20 max-w-4xl w-full relative z-20">
+                        <h2 class="text-3xl font-bold text-saudia-green mb-4" id="countdownTitle">Game akan dimulai dalam:</h2>
+                        <div id="countdownTimer" class="text-6xl font-bold text-saudia-green">3</div>
+                        <div id="loadingProgress" class="hidden mt-4">
+                            <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+                                <div id="progressBar" class="bg-saudia-green h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            </div>
+                            <p class="text-sm text-saudia-green/70">Loading game assets...</p>
+                        </div>
+                    </div>
 
                                                 <!-- Game Screen -->
                     <div id="gameScreen" class="hidden w-full h-screen flex items-center justify-center">
@@ -175,19 +181,92 @@
             }, 1000);
         }
 
-        function startPlaying() {
-            gameState = 'playing';
-            countdownScreen.classList.add('hidden');
-            gameScreen.classList.remove('hidden');
-            
-            gameStartTime = Date.now();
-            currentLevel = 1;
-            score = 0;
-            totalTimeUsed = 0;
-            
-            loadLevel();
-            startGameTimer();
-        }
+                            function startPlaying() {
+                        // Preload all game assets before starting
+                        preloadAssets().then(() => {
+                            gameState = 'playing';
+                            countdownScreen.classList.add('hidden');
+                            gameScreen.classList.remove('hidden');
+                            
+                            gameStartTime = Date.now();
+                            currentLevel = 1;
+                            score = 0;
+                            totalTimeUsed = 0;
+                            
+                            loadLevel();
+                            startGameTimer();
+                        });
+                    }
+                    
+                    // Function to preload all game assets
+                    function preloadAssets() {
+                        return new Promise((resolve) => {
+                            const assets = [
+                                // Question images
+                                "assets/images/1-Question.png",
+                                "assets/images/2-Question.png",
+                                "assets/images/3-Question.png",
+                                "assets/images/4-Question.png",
+                                "assets/images/5-Question.png",
+                                "assets/images/6-Question.png",
+                                // Answer images
+                                "assets/images/1-Answer.png",
+                                "assets/images/2-Answer.png",
+                                "assets/images/3-Answer.png",
+                                "assets/images/4-Answer.png",
+                                "assets/images/5-Answer.png",
+                                "assets/images/6-Answer.png"
+                            ];
+                            
+                            let loadedCount = 0;
+                            const totalAssets = assets.length;
+                            
+                            // Show loading progress
+                            const countdownTitle = document.getElementById('countdownTitle');
+                            const countdownTimer = document.getElementById('countdownTimer');
+                            const loadingProgress = document.getElementById('loadingProgress');
+                            const progressBar = document.getElementById('progressBar');
+                            
+                            countdownTitle.textContent = 'Loading Game Assets...';
+                            countdownTimer.textContent = '0%';
+                            loadingProgress.classList.remove('hidden');
+                            
+                            assets.forEach((src) => {
+                                const img = new Image();
+                                img.onload = () => {
+                                    loadedCount++;
+                                    // Update loading progress
+                                    const progress = Math.round((loadedCount / totalAssets) * 100);
+                                    countdownTimer.textContent = `${progress}%`;
+                                    progressBar.style.width = `${progress}%`;
+                                    
+                                    if (loadedCount === totalAssets) {
+                                        // All assets loaded, show countdown
+                                        setTimeout(() => {
+                                            countdownTitle.textContent = 'Game akan dimulai dalam:';
+                                            countdownTimer.textContent = '3';
+                                            loadingProgress.classList.add('hidden');
+                                            resolve();
+                                        }, 1000);
+                                    }
+                                };
+                                img.onerror = () => {
+                                    console.error(`Failed to load image: ${src}`);
+                                    loadedCount++;
+                                    if (loadedCount === totalAssets) {
+                                        // Continue even if some images failed
+                                        setTimeout(() => {
+                                            countdownTitle.textContent = 'Game akan dimulai dalam:';
+                                            countdownTimer.textContent = '3';
+                                            loadingProgress.classList.add('hidden');
+                                            resolve();
+                                        }, 1000);
+                                    }
+                                };
+                                img.src = src;
+                            });
+                        });
+                    }
 
         function loadLevel() {
             if (currentLevel > gameData.length) {
