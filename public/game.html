@@ -1,451 +1,541 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Saudia Grid Game</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Saudia Quiz Game</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'saudia-green': '#006400',
-                        'saudia-light-green': '#228B22',
-                        'saudia-blue': '#87CEEB',
-                        'saudia-light-blue': '#98FB98'
-                    }
-                }
-            }
-        }
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              "saudia-green": "#006400",
+              "saudia-light-green": "#228B22",
+              "saudia-blue": "#87CEEB",
+              "saudia-light-blue": "#98FB98",
+            },
+          },
+        },
+      };
     </script>
-</head>
-<body class="min-h-screen bg-gradient-to-br from-saudia-blue to-saudia-light-blue flex items-center justify-center text-saudia-green relative overflow-hidden p-5">
-    <!-- Geometric patterns -->
-    <div class="absolute top-0 left-0 w-48 h-48 bg-gradient-to-br from-saudia-green via-saudia-light-green to-green-500 opacity-10 z-10" style="clip-path: polygon(0 0, 100% 0, 50% 100%);"></div>
-    <div class="absolute bottom-0 right-0 w-36 h-36 bg-gradient-to-br from-saudia-green via-saudia-light-green to-green-500 opacity-10 z-10" style="clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);"></div>
-    
-        <!-- Game Title and Start Screen -->
-        <div id="startScreen" class="text-center bg-white/90 backdrop-blur-md rounded-3xl p-8 shadow-2xl border-2 border-saudia-green/20 max-w-4xl w-full relative z-20">
-            <h1 class="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-saudia-green to-saudia-light-green bg-clip-text text-transparent">🎮 Saudia Grid Game</h1>
-            <p class="text-lg text-saudia-green/80 mb-8">Complete the city image by finding the missing piece!</p>
-            <button id="startBtn" class="bg-gradient-to-r from-saudia-green to-saudia-light-green text-white px-8 py-4 rounded-2xl text-xl font-bold hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                Mulai Game
-            </button>
+  </head>
+  <body
+    class="min-h-screen flex flex-col items-center py-[4svh] text-saudia-green relative overflow-hidden p-5"
+    style="
+      background-image: url('./assets/bg.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    "
+  >
+    <img
+      src="./assets/decoration.png"
+      class="h-[20svh] absolute top-0 left-0"
+    />
+    <img src="./assets/logo.svg" class="h-[12svh] mb-[4svh]" />
+
+    <!-- Game Title and Start Screen -->
+    <div
+      id="startScreen"
+      class="text-center h-[70svh] flex flex-col justify-center items-center w-full relative z-20 "
+    >
+      <h1 class="text-4xl md:text-5xl font-bold mb-[2svh]">Saudia Quiz Game</h1>
+      <p class="text-lg">
+        Complete the city image by finding the missing piece!
+      </p>
+      <button
+        id="startBtn"
+        class="mt-[8svh] bg-saudia-green text-white px-8 py-4 rounded-2xl text-xl font-bold hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+      >
+        Mulai Game
+      </button>
+    </div>
+
+    <!-- Countdown Screen -->
+    <div
+      id="countdownScreen"
+      class="hidden text-center h-[70svh] flex flex-col justify-center items-center w-full relative z-20 mt-[2svh]"
+    >
+      <h2
+        class="text-[4svh] font-bold text-saudia-green mb-[2svh]"
+        id="countdownTitle"
+      >
+        Get Ready!
+      </h2>
+      <div
+        id="countdownTimer"
+        class="text-[8svh] mb-[8svh] font-bold text-saudia-green"
+      >
+        3
+      </div>
+      <div id="loadingProgress" class="hidden mt-4">
+        <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+          <div
+            id="progressBar"
+            class="bg-saudia-green h-2 rounded-full transition-all duration-300"
+            style="width: 0%"
+          ></div>
         </div>
+        <p class="text-sm text-saudia-green/70">Loading game assets...</p>
+      </div>
+    </div>
 
-                            <!-- Countdown Screen -->
-                    <div id="countdownScreen" class="hidden text-center bg-white/90 backdrop-blur-md rounded-3xl p-8 shadow-2xl border-2 border-saudia-green/20 max-w-4xl w-full relative z-20">
-                        <h2 class="text-3xl font-bold text-saudia-green mb-4" id="countdownTitle">Game akan dimulai dalam:</h2>
-                        <div id="countdownTimer" class="text-6xl font-bold text-saudia-green">3</div>
-                        <div id="loadingProgress" class="hidden mt-4">
-                            <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
-                                <div id="progressBar" class="bg-saudia-green h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
-                            </div>
-                            <p class="text-sm text-saudia-green/70">Loading game assets...</p>
-                        </div>
-                    </div>
-
-                                                <!-- Game Screen -->
-                    <div id="gameScreen" class="hidden w-full h-screen flex items-center justify-center">
-                        <!-- Square Game Container (95vmin, 1:1 aspect ratio) -->
-                        <div class="w-[95vmin] h-[95vmin] bg-white rounded-lg shadow-lg border-2 border-saudia-green/20 overflow-hidden flex flex-col items-center">
-                            <!-- Header -->
-                            <div class="flex justify-between items-center p-4 bg-saudia-green/10 h-16 w-full">
-                                <div class="text-lg font-bold text-saudia-green">Level: <span id="currentLevel">1</span>/6</div>
-                                <div class="text-lg font-bold text-saudia-green">Score: <span id="score">0</span></div>
-                                <div class="text-lg font-bold text-saudia-green">Time: <span id="gameTimer">30</span>s</div>
-                            </div>
-                            
-                            <!-- 4x4 Grid -->
-                            <div class="grid grid-cols-4 grid-rows-4 flex-1 p-4 h-[50svh] w-[50svh]!important">
-                                <!-- Grid cells will be generated here -->
-                            </div>
-                            
-                            <!-- Draggable Answers Section -->
-                            <div class="p-4 bg-saudia-green/5 border-t border-saudia-green/20 w-full">
-                                <div id="answersContainer" class="flex gap-3 justify-center">
-                                    <!-- Draggable answers will be generated here -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-        <!-- Game Over Screen -->
-        <div id="gameOverScreen" class="hidden text-center bg-white/90 backdrop-blur-md rounded-3xl p-8 shadow-2xl border-2 border-saudia-green/20 max-w-4xl w-full relative z-20">
-            <h2 class="text-3xl font-bold text-saudia-green mb-6">🎉 Game Selesai!</h2>
-            <div class="text-xl text-saudia-green mb-4">Skor Anda: <span id="finalScore" class="font-bold">0</span>/6</div>
-            <div class="text-lg text-saudia-green mb-6">Waktu Tersisa: <span id="gameDuration" class="font-bold">0</span> detik</div>
-            <p class="text-sm text-saudia-green/70">Kembali ke halaman utama dalam <span id="redirectTimer">5</span> detik...</p>
+    <!-- Game Screen -->
+    <div
+      id="gameScreen"
+      class="hidden text-center h-[70svh] flex flex-col justify-center items-center w-full relative z-20 mt-[2svh]"
+    >
+      <!-- Header -->
+      <div
+        class="flex justify-between items-center p-[2svh] bg-saudia-green/10 h-fit bg-white rounded-lg w-[50svh] text-[2svh]"
+      >
+        <div class="font-bold text-saudia-green">
+          Level: <span id="currentLevel">1</span>/6
         </div>
+        <div class="font-bold text-saudia-green">
+          Score: <span id="score">0</span>
+        </div>
+        <div class="font-bold text-saudia-green">
+          Time: <span id="gameTimer">30</span>s
+        </div>
+      </div>
+
+      <!-- 4x4 Grid -->
+      <div
+        class="grid grid-cols-4 grid-rows-4 flex-1 p-4 h-[50svh] w-[50svh]!important"
+      >
+        <!-- Grid cells will be generated here -->
+      </div>
+
+      <div
+          class="p-4 bg-[rgb(255,255,255,0.5)] border- border-saudia-green/20 w-fit rounded-lg"
+        >
+          <div id="answersContainer" class="flex gap-3 justify-center">
+            <!-- Draggable answers will be generated here -->
+          </div>
+        </div>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div
+      id="gameOverScreen"
+      class="hidden text-center h-[70svh] flex flex-col justify-center items-center w-full relative z-20  mt-[2svh]"
+    >
+    <div class="flex flex-col bg-white rounded-lg p-[4svh] border border-saudia-green/20">
+        <h2 class="text-[3svh] font-bold text-saudia-green mb-6">
+            🎉 Game Selesai!
+          </h2>
+          <div class="text-[2.4svh] text-saudia-green">
+            Skor Anda: <span id="finalScore" class="font-bold">0</span>/6
+          </div>
+          <div class="text-[2.4svh] text-saudia-green mb-6">
+            Waktu Tersisa: <span id="gameDuration" class="font-bold">0</span> detik
+          </div>
+          <p class="text-[2svh] text-saudia-green/70">
+            Kembali ke halaman utama dalam
+            <span id="redirectTimer">5</span> detik...
+          </p>
+    </div>
+      
+    </div>
 
     <script>
-        // Game state
-        let gameState = 'start'; // start, countdown, playing, gameOver
-        let currentLevel = 1;
-        let score = 0;
-        let gameStartTime = 0;
-        let totalTimeUsed = 0;
-        let countdownInterval;
-        let gameTimerInterval;
-        let redirectInterval;
-        let selectedCity = '';
-        let answerGridPosition = 0;
-        let completeImage = '';
-        let usedCities = []; // Track used cities to ensure uniqueness
+      // Game state
+      let gameState = "start"; // start, countdown, playing, gameOver
+      let currentLevel = 1;
+      let score = 0;
+      let gameStartTime = 0;
+      let totalTimeUsed = 0;
+      let countdownInterval;
+      let gameTimerInterval;
+      let redirectInterval;
+      let selectedCity = "";
+      let answerGridPosition = 0;
+      let completeImage = "";
+      let usedCities = []; // Track used cities to ensure uniqueness
 
-        // Available cities
-        const cities = [
-            'Amsterdam-300w', 'Barcelona-300w', 'Cairo-300w', 'Frankfurt-300w',
-            'London-300w', 'Madrid-300w', 'Milan-300w', 'Paris-300w',
-            'Rome-300w', 'Turkey-300w', 'Washington-300w'
-        ];
+      // Available cities
+      const cities = [
+        "Amsterdam-300w",
+        "Barcelona-300w",
+        "Cairo-300w",
+        "Frankfurt-300w",
+        "London-300w",
+        "Madrid-300w",
+        "Milan-300w",
+        "Paris-300w",
+        "Rome-300w",
+        "Turkey-300w",
+        "Washington-300w",
+      ];
 
-        // DOM elements
-        const startScreen = document.getElementById('startScreen');
-        const countdownScreen = document.getElementById('countdownScreen');
-        const gameScreen = document.getElementById('gameScreen');
-        const gameOverScreen = document.getElementById('gameOverScreen');
-        const startBtn = document.getElementById('startBtn');
-        const countdownTimer = document.getElementById('countdownTimer');
-        const currentLevelSpan = document.getElementById('currentLevel');
-        const scoreSpan = document.getElementById('score');
-        const gameTimerSpan = document.getElementById('gameTimer');
-        const finalScore = document.getElementById('finalScore');
-        const gameDuration = document.getElementById('gameDuration');
-        const redirectTimer = document.getElementById('redirectTimer');
+      // DOM elements
+      const startScreen = document.getElementById("startScreen");
+      const countdownScreen = document.getElementById("countdownScreen");
+      const gameScreen = document.getElementById("gameScreen");
+      const gameOverScreen = document.getElementById("gameOverScreen");
+      const startBtn = document.getElementById("startBtn");
+      const countdownTimer = document.getElementById("countdownTimer");
+      const currentLevelSpan = document.getElementById("currentLevel");
+      const scoreSpan = document.getElementById("score");
+      const gameTimerSpan = document.getElementById("gameTimer");
+      const finalScore = document.getElementById("finalScore");
+      const gameDuration = document.getElementById("gameDuration");
+      const redirectTimer = document.getElementById("redirectTimer");
 
-        // Utility function to shuffle array
-        function shuffleArray(array) {
-            const shuffled = [...array];
-            for (let i = shuffled.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            }
-            return shuffled;
+      // Utility function to shuffle array
+      function shuffleArray(array) {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
         }
-        
-        // Drag and drop functions
-        let draggedElement = null;
-        
-        function handleDragStart(e) {
-            draggedElement = e.target;
-            e.target.style.opacity = '0.5';
-            e.dataTransfer.effectAllowed = 'move';
-        }
-        
-        function handleDragEnd(e) {
-            e.target.style.opacity = '1';
-            draggedElement = null;
-        }
+        return shuffled;
+      }
 
-        // Event listeners
-        startBtn.addEventListener('click', startGame);
+      // Drag and drop functions
+      let draggedElement = null;
 
-        // Game functions
-        function startGame() {
-            gameState = 'countdown';
-            startScreen.classList.add('hidden');
-            countdownScreen.classList.remove('hidden');
-            
-            let countdown = 3;
-            countdownTimer.textContent = countdown;
-            
-            countdownInterval = setInterval(() => {
-                countdown--;
-                countdownTimer.textContent = countdown;
-                
-                if (countdown <= 0) {
-                    clearInterval(countdownInterval);
-                    startPlaying();
-                }
-            }, 1000);
-        }
+      function handleDragStart(e) {
+        draggedElement = e.target;
+        e.target.style.opacity = "0.5";
+        e.dataTransfer.effectAllowed = "move";
+      }
 
-        function startPlaying() {
-            gameState = 'playing';
-            countdownScreen.classList.add('hidden');
-            gameScreen.classList.remove('hidden');
-            
-            gameStartTime = Date.now();
-            currentLevel = 1;
-            score = 0;
-            totalTimeUsed = 0;
-            usedCities = [];
-            scoreSpan.textContent = score;
-            
-            initGame();
-            startGameTimer();
-        }
-                    
-        // Initialize game
-        function initGame() {
-            console.log('Initializing game...');
-            
-            // Randomly select one city for the complete image
-            selectedCity = getRandomCity();
-            console.log('Selected city:', selectedCity);
-            
-            // Generate the 4x4 grid with one missing piece
-            generateGrid();
-            console.log('Grid generated');
-            
-            // Generate 4 answer options (1 correct + 3 wrong)
-            generateAnswers();
-            console.log('Answers generated');
-            
-            // Setup drop zone
-            setTimeout(setupDropZone, 100);
-        }
-        
-        // Get random city (ensuring uniqueness)
-        function getRandomCity() {
-            // Filter out cities that have already been used
-            const availableCities = cities.filter(city => !usedCities.includes(city));
-            
-            if (availableCities.length === 0) {
-                // If all cities have been used, reset the used cities array
-                usedCities = [];
-                return cities[Math.floor(Math.random() * cities.length)];
-            }
-            
-            // Select a random city from available ones
-            const selectedCity = availableCities[Math.floor(Math.random() * availableCities.length)];
-            usedCities.push(selectedCity);
-            return selectedCity;
-        }
+      function handleDragEnd(e) {
+        e.target.style.opacity = "1";
+        draggedElement = null;
+      }
 
-        // Generate 4x4 grid with one missing piece
-        function generateGrid() {
-            const gridContainer = document.querySelector('.grid');
-            gridContainer.innerHTML = '';
-            
-            // Randomly select which image will be the answer (A1 to A16)
-            const answerImageNumber = Math.floor(Math.random() * 16) + 1;
-            completeImage = `${selectedCity.split('-')[0]}A${answerImageNumber}.png`;
-            
-            // Set the answer grid position to match the image number (0-indexed)
-            answerGridPosition = answerImageNumber - 1;
-            
-            // Create 4x4 grid showing A1 to A16 images
-            for (let i = 0; i < 16; i++) {
-                const cell = document.createElement('div');
-                cell.className = 'bg-gray-100 flex items-center justify-center relative overflow-hidden';
-                cell.id = `cell-${i}`;
-                
-                if (i === answerGridPosition) {
-                    // This is the missing piece - make it the drop zone
-                    cell.id = 'answer';
-                    cell.classList.add('bg-saudia-green/20');
-                    cell.innerHTML = '<span class="text-saudia-green/50 text-sm">Drop here</span>';
-                } else {
-                    // Show the corresponding A1-A16 image
-                    const imageNumber = i + 1; // A1, A2, A3, ..., A16
-                    const imageName = `${selectedCity.split('-')[0]}A${imageNumber}.png`;
-                    
-                    cell.innerHTML = `<img src="assets/cities/${selectedCity}/${imageName}" alt="City ${imageNumber}" class="w-full h-full object-cover">`;
-                }
-                
-                gridContainer.appendChild(cell);
-            }
-        }
-        
-        // Generate 4 answer options
-        function generateAnswers() {
-            console.log('Generating answers for city:', selectedCity);
-            console.log('Complete image:', completeImage);
-            
-            const answersContainer = document.getElementById('answersContainer');
-            console.log('Answers container:', answersContainer);
-            answersContainer.innerHTML = '';
-            
-            // Create correct answer (the missing piece)
-            const correctAnswer = createDraggableAnswer(selectedCity, completeImage, true);
-            console.log('Correct answer created:', correctAnswer);
-            answersContainer.appendChild(correctAnswer);
-            
-            // Create 3 wrong answers from other cities
-            const wrongCities = cities.filter(city => city !== selectedCity);
-            const selectedWrongCities = getRandomCities(3);
-            console.log('Wrong cities selected:', selectedWrongCities);
-            
-            selectedWrongCities.forEach(city => {
-                const randomImage = getRandomImage(city);
-                const wrongAnswer = createDraggableAnswer(city, randomImage, false);
-                console.log('Wrong answer created for', city, ':', wrongAnswer);
-                answersContainer.appendChild(wrongAnswer);
-            });
-            
-            console.log('Total answers in container:', answersContainer.children.length);
-        }
-        
-        // Get random cities for wrong answers
-        function getRandomCities(count) {
-            const shuffled = [...cities].sort(() => 0.5 - Math.random());
-            return shuffled.slice(0, count);
-        }
-        
-        // Get random image from city folder
-        function getRandomImage(cityFolder) {
-            const imageNumbers = Array.from({length: 16}, (_, i) => i + 1);
-            const randomNum = imageNumbers[Math.floor(Math.random() * imageNumbers.length)];
-            return `${cityFolder.split('-')[0]}A${randomNum}.png`;
-        }
-        
-        // Create draggable answer element
-        function createDraggableAnswer(city, imageName, isCorrect) {
-            const answerDiv = document.createElement('div');
-            answerDiv.className = 'w-20 h-20 bg-white border-2 border-saudia-green/30 rounded-lg cursor-grab active:cursor-grabbing flex items-center justify-center overflow-hidden';
-            answerDiv.draggable = true;
-            answerDiv.dataset.city = city;
-            answerDiv.dataset.image = imageName;
-            answerDiv.dataset.correct = isCorrect;
-            
-            answerDiv.innerHTML = `<img src="assets/cities/${city}/${imageName}" alt="City" class="w-full h-full object-cover pointer-events-none">`;
-            
-            // Add drag events
-            answerDiv.addEventListener('dragstart', handleDragStart);
-            answerDiv.addEventListener('dragend', handleDragEnd);
-            
-            return answerDiv;
+      // Event listeners
+      startBtn.addEventListener("click", startGame);
+
+      // Game functions
+      function startGame() {
+        gameState = "countdown";
+        startScreen.classList.add("hidden");
+        countdownScreen.classList.remove("hidden");
+
+        let countdown = 3;
+        countdownTimer.textContent = countdown;
+
+        countdownInterval = setInterval(() => {
+          countdown--;
+          countdownTimer.textContent = countdown;
+
+          if (countdown <= 0) {
+            clearInterval(countdownInterval);
+            startPlaying();
+          }
+        }, 1000);
+      }
+
+      function startPlaying() {
+        gameState = "playing";
+        countdownScreen.classList.add("hidden");
+        gameScreen.classList.remove("hidden");
+
+        gameStartTime = Date.now();
+        currentLevel = 1;
+        score = 0;
+        totalTimeUsed = 0;
+        usedCities = [];
+        scoreSpan.textContent = score;
+
+        initGame();
+        startGameTimer();
+      }
+
+      // Initialize game
+      function initGame() {
+        console.log("Initializing game...");
+
+        // Randomly select one city for the complete image
+        selectedCity = getRandomCity();
+        console.log("Selected city:", selectedCity);
+
+        // Generate the 4x4 grid with one missing piece
+        generateGrid();
+        console.log("Grid generated");
+
+        // Generate 4 answer options (1 correct + 3 wrong)
+        generateAnswers();
+        console.log("Answers generated");
+
+        // Setup drop zone
+        setTimeout(setupDropZone, 100);
+      }
+
+      // Get random city (ensuring uniqueness)
+      function getRandomCity() {
+        // Filter out cities that have already been used
+        const availableCities = cities.filter(
+          (city) => !usedCities.includes(city)
+        );
+
+        if (availableCities.length === 0) {
+          // If all cities have been used, reset the used cities array
+          usedCities = [];
+          return cities[Math.floor(Math.random() * cities.length)];
         }
 
-        // Add drop zone functionality to answer grid
-        function setupDropZone() {
-            const answerGrid = document.getElementById('answer');
-            if (answerGrid) {
-                answerGrid.addEventListener('dragover', handleDragOver);
-                answerGrid.addEventListener('drop', handleDrop);
-            }
-        }
-        
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            e.target.style.borderColor = 'rgb(0, 100, 0, 0.6)';
-            e.target.style.backgroundColor = 'rgb(0, 100, 0, 0.2)';
-        }
-        
-        function handleDrop(e) {
-            e.preventDefault();
-            
-            if (draggedElement) {
-                const isCorrect = draggedElement.dataset.correct === 'true';
-                
-                if (isCorrect) {
-                    // Correct answer
-                    score++;
-                    scoreSpan.textContent = score;
-                    
-                    // Show the correct piece immediately to complete the image
-                    const correctCity = draggedElement.dataset.city;
-                    const correctImage = draggedElement.dataset.image;
-                    e.target.innerHTML = `<img src="assets/cities/${correctCity}/${correctImage}" alt="City piece" class="w-full h-full object-cover">`;
-                    
-                    // Disable all answers
-                    const answers = document.querySelectorAll('#answersContainer > div');
-                    answers.forEach(answer => {
-                        answer.draggable = false;
-                        answer.style.cursor = 'not-allowed';
-                        answer.style.opacity = '0.6';
-                    });
-                    
-                    // Wait 1 second then go to next question
-                    setTimeout(() => {
-                        currentLevel++;
-                        clearInterval(gameTimerInterval);
-                        if (currentLevel > 6) {
-                            endGame();
-                        } else {
-                            currentLevelSpan.textContent = currentLevel;
-                            initGame();
-                            startGameTimer();
-                        }
-                    }, 1000);
-                    
-                } else {
-                    // Wrong answer
-                    e.target.style.borderColor = 'rgb(220, 38, 38, 0.8)';
-                    e.target.style.backgroundColor = 'rgb(220, 38, 38, 0.2)';
-                    e.target.innerHTML = '<span class="text-red-600 text-lg font-bold">❌ Wrong!</span>';
-                    
-                    // Reset after 1 second
-                    setTimeout(() => {
-                        e.target.style.borderColor = 'rgb(0, 100, 0, 0.3)';
-                        e.target.style.backgroundColor = 'rgb(0, 100, 0, 0.05)';
-                        e.target.innerHTML = '<span class="text-saudia-green/50 text-sm">Drop here</span>';
-                    }, 1000);
-                }
-            }
-        }
+        // Select a random city from available ones
+        const selectedCity =
+          availableCities[Math.floor(Math.random() * availableCities.length)];
+        usedCities.push(selectedCity);
+        return selectedCity;
+      }
 
-        // Restart game
-        function restartGame() {
-            score = 0;
-            currentLevel = 1;
-            totalTimeUsed = 0;
-            usedCities = [];
-            scoreSpan.textContent = score;
-            currentLevelSpan.textContent = currentLevel;
-            gameTimerSpan.textContent = '30';
-            initGame();
-            startGameTimer();
-        }
-        
-        // Timer functions
-        function startGameTimer() {
-            // Calculate remaining time from total 30 seconds
-            let timeLeft = 30 - totalTimeUsed;
-            gameTimerSpan.textContent = timeLeft;
-            
-            gameTimerInterval = setInterval(() => {
-                timeLeft--;
-                totalTimeUsed++;
-                gameTimerSpan.textContent = timeLeft;
-                
-                if (timeLeft <= 0) {
-                    clearInterval(gameTimerInterval);
-                    handleTimeout();
-                }
-            }, 1000);
-        }
-        
-        function handleTimeout() {
-            // When timeout occurs, the remaining time becomes 0, so totalTimeUsed becomes 30
-            totalTimeUsed = 30;
-            endGame();
-        }
+      // Generate 4x4 grid with one missing piece
+      function generateGrid() {
+        const gridContainer = document.querySelector(".grid");
+        gridContainer.innerHTML = "";
 
-        function endGame() {
-            gameState = 'gameOver';
-            gameScreen.classList.add('hidden');
-            gameOverScreen.classList.remove('hidden');
-            
-            // Calculate remaining time from total 30 seconds
-            const remainingTime = 30 - totalTimeUsed;
-            
-            finalScore.textContent = score;
-            gameDuration.textContent = remainingTime;
-            
-            // Redirect after 5 seconds
-            let redirectCountdown = 5;
-            redirectTimer.textContent = redirectCountdown;
-            
-            redirectInterval = setInterval(() => {
-                redirectCountdown--;
-                redirectTimer.textContent = redirectCountdown;
-                
-                if (redirectCountdown <= 0) {
-                    clearInterval(redirectInterval);
-                    window.location.href = '/';
-                }
-            }, 1000);
+        // Randomly select which image will be the answer (A1 to A16)
+        const answerImageNumber = Math.floor(Math.random() * 16) + 1;
+        completeImage = `${
+          selectedCity.split("-")[0]
+        }A${answerImageNumber}.png`;
+
+        // Set the answer grid position to match the image number (0-indexed)
+        answerGridPosition = answerImageNumber - 1;
+
+        // Create 4x4 grid showing A1 to A16 images
+        for (let i = 0; i < 16; i++) {
+          const cell = document.createElement("div");
+          cell.className =
+            "bg-gray-100 flex items-center justify-center relative overflow-hidden";
+          cell.id = `cell-${i}`;
+
+          if (i === answerGridPosition) {
+            // This is the missing piece - make it the drop zone
+            cell.id = "answer";
+            cell.classList.add("bg-white");
+            cell.innerHTML =
+              '<span class="text-saudia-green/50 text-[1.5svh]">Drag and <br/>Drop here</span>';
+          } else {
+            // Show the corresponding A1-A16 image
+            const imageNumber = i + 1; // A1, A2, A3, ..., A16
+            const imageName = `${
+              selectedCity.split("-")[0]
+            }A${imageNumber}.png`;
+
+            cell.innerHTML = `<img src="assets/cities/${selectedCity}/${imageName}" alt="City ${imageNumber}" class="w-full h-full object-cover">`;
+          }
+
+          gridContainer.appendChild(cell);
         }
-        
-        // Start game when page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            // Game will start when start button is clicked
+      }
+
+      // Generate 4 answer options
+      function generateAnswers() {
+        console.log("Generating answers for city:", selectedCity);
+        console.log("Complete image:", completeImage);
+
+        const answersContainer = document.getElementById("answersContainer");
+        console.log("Answers container:", answersContainer);
+        answersContainer.innerHTML = "";
+
+        // Create correct answer (the missing piece)
+        const correctAnswer = createDraggableAnswer(
+          selectedCity,
+          completeImage,
+          true
+        );
+        console.log("Correct answer created:", correctAnswer);
+        answersContainer.appendChild(correctAnswer);
+
+        // Create 3 wrong answers from other cities
+        const wrongCities = cities.filter((city) => city !== selectedCity);
+        const selectedWrongCities = getRandomCities(3);
+        console.log("Wrong cities selected:", selectedWrongCities);
+
+        selectedWrongCities.forEach((city) => {
+          const randomImage = getRandomImage(city);
+          const wrongAnswer = createDraggableAnswer(city, randomImage, false);
+          console.log("Wrong answer created for", city, ":", wrongAnswer);
+          answersContainer.appendChild(wrongAnswer);
         });
+
+        console.log(
+          "Total answers in container:",
+          answersContainer.children.length
+        );
+      }
+
+      // Get random cities for wrong answers
+      function getRandomCities(count) {
+        const shuffled = [...cities].sort(() => 0.5 - Math.random());
+        return shuffled.slice(0, count);
+      }
+
+      // Get random image from city folder
+      function getRandomImage(cityFolder) {
+        const imageNumbers = Array.from({ length: 16 }, (_, i) => i + 1);
+        const randomNum =
+          imageNumbers[Math.floor(Math.random() * imageNumbers.length)];
+        return `${cityFolder.split("-")[0]}A${randomNum}.png`;
+      }
+
+      // Create draggable answer element
+      function createDraggableAnswer(city, imageName, isCorrect) {
+        const answerDiv = document.createElement("div");
+        answerDiv.className =
+          "w-20 h-20 bg-white border-2 border-saudia-green/30 rounded-lg cursor-grab active:cursor-grabbing flex items-center justify-center overflow-hidden";
+        answerDiv.draggable = true;
+        answerDiv.dataset.city = city;
+        answerDiv.dataset.image = imageName;
+        answerDiv.dataset.correct = isCorrect;
+
+        answerDiv.innerHTML = `<img src="assets/cities/${city}/${imageName}" alt="City" class="w-full h-full object-cover pointer-events-none">`;
+
+        // Add drag events
+        answerDiv.addEventListener("dragstart", handleDragStart);
+        answerDiv.addEventListener("dragend", handleDragEnd);
+
+        return answerDiv;
+      }
+
+      // Add drop zone functionality to answer grid
+      function setupDropZone() {
+        const answerGrid = document.getElementById("answer");
+        if (answerGrid) {
+          answerGrid.addEventListener("dragover", handleDragOver);
+          answerGrid.addEventListener("drop", handleDrop);
+        }
+      }
+
+      function handleDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        e.target.style.borderColor = "rgb(0, 100, 0, 0.6)";
+        e.target.style.backgroundColor = "rgb(0, 100, 0, 0.2)";
+      }
+
+      function handleDrop(e) {
+        e.preventDefault();
+
+        if (draggedElement) {
+          const isCorrect = draggedElement.dataset.correct === "true";
+
+          if (isCorrect) {
+            // Correct answer
+            score++;
+            scoreSpan.textContent = score;
+
+            // Show the correct piece immediately to complete the image
+            const correctCity = draggedElement.dataset.city;
+            const correctImage = draggedElement.dataset.image;
+            e.target.innerHTML = `<img src="assets/cities/${correctCity}/${correctImage}" alt="City piece" class="w-full h-full object-cover">`;
+
+            // Disable all answers
+            const answers = document.querySelectorAll(
+              "#answersContainer > div"
+            );
+            answers.forEach((answer) => {
+              answer.draggable = false;
+              answer.style.cursor = "not-allowed";
+              answer.style.opacity = "0.6";
+            });
+
+            // Wait 1 second then go to next question
+            setTimeout(() => {
+              currentLevel++;
+              clearInterval(gameTimerInterval);
+              if (currentLevel > 6) {
+                endGame();
+              } else {
+                currentLevelSpan.textContent = currentLevel;
+                initGame();
+                startGameTimer();
+              }
+            }, 1000);
+          } else {
+            // Wrong answer
+            e.target.style.borderColor = "rgb(220, 38, 38, 0.8)";
+            e.target.style.backgroundColor = "rgb(220, 38, 38, 0.2)";
+            e.target.innerHTML =
+              '<span class="text-red-600 text-lg font-bold">❌ Wrong!</span>';
+
+            // Reset after 1 second
+            setTimeout(() => {
+              e.target.style.borderColor = "rgb(0, 100, 0, 0.3)";
+              e.target.style.backgroundColor = "rgb(0, 100, 0, 0.05)";
+              e.target.innerHTML =
+                '<span class="text-saudia-green/50 text-sm">Drop here</span>';
+            }, 1000);
+          }
+        }
+      }
+
+      // Restart game
+      function restartGame() {
+        score = 0;
+        currentLevel = 1;
+        totalTimeUsed = 0;
+        usedCities = [];
+        scoreSpan.textContent = score;
+        currentLevelSpan.textContent = currentLevel;
+        gameTimerSpan.textContent = "30";
+        initGame();
+        startGameTimer();
+      }
+
+      // Timer functions
+      function startGameTimer() {
+        // Calculate remaining time from total 30 seconds
+        let timeLeft = 30 - totalTimeUsed;
+        gameTimerSpan.textContent = timeLeft;
+
+        gameTimerInterval = setInterval(() => {
+          timeLeft--;
+          totalTimeUsed++;
+          gameTimerSpan.textContent = timeLeft;
+
+          if (timeLeft <= 0) {
+            clearInterval(gameTimerInterval);
+            handleTimeout();
+          }
+        }, 1000);
+      }
+
+      function handleTimeout() {
+        // When timeout occurs, the remaining time becomes 0, so totalTimeUsed becomes 30
+        totalTimeUsed = 30;
+        endGame();
+      }
+
+      function endGame() {
+        gameState = "gameOver";
+        gameScreen.classList.add("hidden");
+        gameOverScreen.classList.remove("hidden");
+
+        // Calculate remaining time from total 30 seconds
+        const remainingTime = 30 - totalTimeUsed;
+
+        finalScore.textContent = score;
+        gameDuration.textContent = remainingTime;
+
+        // Redirect after 5 seconds
+        let redirectCountdown = 5;
+        redirectTimer.textContent = redirectCountdown;
+
+        redirectInterval = setInterval(() => {
+          redirectCountdown--;
+          redirectTimer.textContent = redirectCountdown;
+
+          if (redirectCountdown <= 0) {
+            clearInterval(redirectInterval);
+            window.location.href = "/";
+          }
+        }, 1000);
+      }
+
+      // Start game when page loads
+      document.addEventListener("DOMContentLoaded", () => {
+        // Game will start when start button is clicked
+      });
     </script>
-</body>
+  </body>
 </html>

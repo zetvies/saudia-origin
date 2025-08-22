@@ -1,121 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Saudia QR Code</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        'saudia-green': '#006400',
-                        'saudia-light-green': '#228B22',
-                        'saudia-blue': '#87CEEB',
-                        'saudia-light-blue': '#98FB98'
-                    }
-                }
-            }
-        }
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              "saudia-green": "#006400",
+              "saudia-light-green": "#228B22",
+              "saudia-blue": "#87CEEB",
+              "saudia-light-blue": "#98FB98",
+            },
+          },
+        },
+      };
     </script>
-</head>
-<body class="min-h-screen bg-gradient-to-br from-saudia-blue to-saudia-light-blue flex items-center justify-center text-saudia-green relative overflow-hidden p-5">
-    <!-- Geometric patterns -->
-    <div class="absolute top-0 left-0 w-48 h-48 bg-gradient-to-br from-saudia-green via-saudia-light-green to-green-500 opacity-10 z-10" style="clip-path: polygon(0 0, 100% 0, 50% 100%);"></div>
-    <div class="absolute bottom-0 right-0 w-36 h-36 bg-gradient-to-br from-saudia-green via-saudia-light-green to-green-500 opacity-10 z-10" style="clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);"></div>
-    
-    <div class="text-center bg-white/90 backdrop-blur-md rounded-3xl p-12 shadow-2xl border-2 border-saudia-green/20 max-w-lg w-full relative z-20">
-        <h1 class="text-3xl md:text-4xl font-bold mb-8 bg-gradient-to-r from-saudia-green to-saudia-light-green bg-clip-text text-transparent">Scan QR Code untuk Memulai</h1>
-        
-        <div class="bg-white p-6 rounded-2xl shadow-lg border-2 border-saudia-green/20 mb-8 inline-block">
-            <div id="qrcode" class="w-48 h-48 flex items-center justify-center">
-                
-            </div>
+  </head>
+  <body
+    class="min-h-screen flex flex-col items-center justify-center text-saudia-green relative overflow-hidden p-5"
+    style="
+      background-image: url('./assets/bg.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    "
+  >
+  <img src="./assets/decoration.png" class="h-[20svh] absolute top-0 left-0 "/>
+  <img src="./assets/decoration.png" class="h-[20svh] absolute bottom-0 right-0 rotate-180" />
+    <img src="./assets/logo.svg" class="h-[12svh]" />
+    <div class="flex flex-col items-center text-center w-full justify-center mt-[4svh] mb-[8svh]">
+        <div class="text-[2.2svh] font-bold mb-4">
+            Senayan City, Jakarta, 29th - 31st August 2025
         </div>
         
-        <p class="text-sm text-saudia-green/70 mb-4">Scan dengan kamera ponsel Anda</p>
-        
-                            <div class="mt-4">
-                        <a href="./game.html" 
-                           class="inline-block bg-gradient-to-r from-saudia-green to-saudia-light-green text-white px-6 py-2 rounded-lg text-sm font-semibold hover:shadow-lg transition-all duration-300">
-                            Buka Game
-                        </a>
-                    </div>
+        <div class="text-[3.6svh] font-bold">
+            "The world is closer with Saudia"
+        </div>
+    </div>
+    <div
+      class="text-center flex bg-white/90 backdrop-blur-md rounded-3xl p-[6svh] pr-0 shadow-2xl border-2 border-saudia-green/20 max-w-lg w-full relative z-20 mb-[5svh]"
+    >
+      <div
+        class="bg-white p-[2svh] rounded-2xl shadow-lg border-2 border-saudia-green/20 inline-block"
+      >
+        <div
+          id="qrcode"
+          class="w-[20svh] h-[20svh] flex items-center justify-center"
+        ></div>
+      </div>
+
+      <div class="flex flex-col items-center text-center w-full justify-center">
+        <p class="font-bold text-saudia-green/70 mb-4 text-[2.4svh]">
+            Scan QR Code untuk Memulai
+          </p>
+        <p class="text-sm text-saudia-green/70 mb-4">
+          Scan dengan kamera ponsel Anda,<br/> lalu isi form.
+        </p>
+
+        <div class="mt-4">
+          <a
+            href="./game.html"
+            class="inline-block bg-gradient-to-r from-saudia-green to-saudia-light-green text-white px-6 py-2 rounded-lg text-sm font-semibold hover:shadow-lg transition-all duration-300"
+          >
+            Buka Game
+          </a>
+        </div>
+      </div>
     </div>
 
-                    <script>
-                    // WebSocket connection for form submission detection - automatically detect protocol
-                    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-                    const ws = new WebSocket(`${wsProtocol}//${window.location.host}`);
-                    
-                    ws.onopen = function() {
-                        console.log('WebSocket connected to index page');
-                    };
-                    
-                    ws.onmessage = function(event) {
-                        const message = JSON.parse(event.data);
-                        if (message.type === 'form-submitted') {
-                            console.log('Form submitted detected, redirecting to game:', message.data);
-                            
-                            // Show notification
-                            showNotification('Form submitted! Redirecting to game...');
-                            
-                            // Redirect to game after 1 second
-                            setTimeout(() => {
-                                window.location.href = '/game.html';
-                            }, 1000);
-                        }
-                    };
-                    
-                    ws.onerror = function(error) {
-                        console.error('WebSocket error:', error);
-                    };
-                    
-                    ws.onclose = function() {
-                        console.log('WebSocket disconnected from index page');
-                    };
-                    
-                    // Function to show notification
-                    function showNotification(message) {
-                        // Create notification element
-                        const notification = document.createElement('div');
-                        notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full';
-                        notification.textContent = message;
-                        
-                        // Add to page
-                        document.body.appendChild(notification);
-                        
-                        // Animate in
-                        setTimeout(() => {
-                            notification.classList.remove('translate-x-full');
-                        }, 100);
-                        
-                        // Remove after 3 seconds
-                        setTimeout(() => {
-                            notification.classList.add('translate-x-full');
-                            setTimeout(() => {
-                                document.body.removeChild(notification);
-                            }, 300);
-                        }, 3000);
-                    }
-                    
-                    // Generate QR Code
-                    document.addEventListener('DOMContentLoaded', function() {
-                        const qrCodeElement = document.getElementById('qrcode');
-                        const targetUrl = 'https://saudia-origin-demo.onrender.com/form.html';
-                        
-                        // Create QR code using QRCode.js
-                        new QRCode(qrCodeElement, {
-                            text: targetUrl,
-                            width: 192,
-                            height: 192,
-                            colorDark: '#006400',
-                            colorLight: '#FFFFFF',
-                            correctLevel: QRCode.CorrectLevel.H
-                        });
-                    });
-                </script>
-</body>
+    <script>
+      // WebSocket connection for form submission detection - automatically detect protocol
+      const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const ws = new WebSocket(`${wsProtocol}//${window.location.host}`);
+
+      ws.onopen = function () {
+        console.log("WebSocket connected to index page");
+      };
+
+      ws.onmessage = function (event) {
+        const message = JSON.parse(event.data);
+        if (message.type === "form-submitted") {
+          console.log(
+            "Form submitted detected, redirecting to game:",
+            message.data
+          );
+
+          // Show notification
+          showNotification("Form submitted! Redirecting to game...");
+
+          // Redirect to game after 1 second
+          setTimeout(() => {
+            window.location.href = "/game.html";
+          }, 1000);
+        }
+      };
+
+      ws.onerror = function (error) {
+        console.error("WebSocket error:", error);
+      };
+
+      ws.onclose = function () {
+        console.log("WebSocket disconnected from index page");
+      };
+
+      // Function to show notification
+      function showNotification(message) {
+        // Create notification element
+        const notification = document.createElement("div");
+        notification.className =
+          "fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full";
+        notification.textContent = message;
+
+        // Add to page
+        document.body.appendChild(notification);
+
+        // Animate in
+        setTimeout(() => {
+          notification.classList.remove("translate-x-full");
+        }, 100);
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+          notification.classList.add("translate-x-full");
+          setTimeout(() => {
+            document.body.removeChild(notification);
+          }, 300);
+        }, 3000);
+      }
+
+      // Generate QR Code
+      document.addEventListener("DOMContentLoaded", function () {
+        const qrCodeElement = document.getElementById("qrcode");
+        const targetUrl = "https://saudia-origin-demo.onrender.com/form.html";
+
+        // Create QR code using QRCode.js
+        new QRCode(qrCodeElement, {
+          text: targetUrl,
+          width: 192,
+          height: 192,
+          colorDark: "#006400",
+          colorLight: "#FFFFFF",
+          correctLevel: QRCode.CorrectLevel.H,
+        });
+      });
+    </script>
+  </body>
 </html>
