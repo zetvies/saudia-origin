@@ -103,13 +103,13 @@
 
       <!-- 4x4 Grid -->
       <div
-        class="grid grid-cols-4 grid-rows-4 flex-1 p-4 h-[50svh] w-[50svh]!important"
+        class="grid grid-cols-4 grid-rows-4  h-[50svh] w-[50svh] bg-white/80 rounded-lg mt-[2svh]"
       >
         <!-- Grid cells will be generated here -->
       </div>
 
       <div
-          class="p-4 bg-[rgb(255,255,255,0.5)] border- border-saudia-green/20 w-fit rounded-lg"
+          class="p-4 bg-white/80 border border-saudia-green/20 w-fit rounded-lg mt-4"
         >
           <div id="answersContainer" class="flex gap-3 justify-center">
             <!-- Draggable answers will be generated here -->
@@ -305,7 +305,7 @@
         for (let i = 0; i < 16; i++) {
           const cell = document.createElement("div");
           cell.className =
-            "bg-gray-100 flex items-center justify-center relative overflow-hidden";
+            "bg-gray-100 flex items-center justify-center relative overflow-hidden min-h-0 min-w-0";
           cell.id = `cell-${i}`;
 
           if (i === answerGridPosition) {
@@ -439,7 +439,13 @@
             // Show the correct piece immediately to complete the image
             const correctCity = draggedElement.dataset.city;
             const correctImage = draggedElement.dataset.image;
+            
+            // Preserve the cell structure and only update the content
             e.target.innerHTML = `<img src="assets/cities/${correctCity}/${correctImage}" alt="City piece" class="w-full h-full object-cover">`;
+            
+            // Remove the drop zone styling and make it look like a regular cell
+            e.target.classList.remove('bg-white');
+            e.target.classList.add('bg-gray-100');
 
             // Disable all answers
             const answers = document.querySelectorAll(
@@ -475,7 +481,7 @@
               e.target.style.borderColor = "rgb(0, 100, 0, 0.3)";
               e.target.style.backgroundColor = "rgb(0, 100, 0, 0.05)";
               e.target.innerHTML =
-                '<span class="text-saudia-green/50 text-sm">Drop here</span>';
+                '<span class="text-saudia-green/50 text-[1.5svh]">Drag and <br/>Drop here</span>';
             }, 1000);
           }
         }
