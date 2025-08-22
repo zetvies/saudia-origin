@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saudia Grid Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'saudia-green': '#006400',
+                        'saudia-light-green': '#228B22',
+                        'saudia-blue': '#87CEEB',
+                        'saudia-light-blue': '#98FB98'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-saudia-blue to-saudia-light-blue flex items-center justify-center text-saudia-green relative overflow-hidden p-5">
+    <!-- Game Container -->
+    <div class="w-[95vmin] h-[95vmin] bg-white rounded-lg shadow-lg border-2 border-saudia-green/20 overflow-hidden flex flex-col items-center ">
+        <!-- Header -->
+        <div class="flex justify-between items-center p-4 bg-saudia-green/10 h-16 w-full">
+            <div class="text-lg font-bold text-saudia-green">Grid Game</div>
+            <div class="flex items-center gap-4">
+                <div class="text-lg font-bold text-saudia-green">Score: <span id="score">0</span></div>
+                <button onclick="restartGame()" class="bg-saudia-green text-white px-3 py-1 rounded text-sm hover:bg-saudia-light-green transition-colors">Restart</button>
+            </div>
+        </div>
+        
+        <!-- 4x4 Grid -->
+        <div class="grid grid-cols-4 grid-rows-4 flex-1 p-4 h-[50svh] w-[50svh]">
+            <!-- Grid cells will be generated here -->
+        </div>
+        
+        <!-- Draggable Answers Section -->
+        <div class="p-4 bg-saudia-green/5 border-t border-saudia-green/20 w-full">
+            <div id="answersContainer" class="flex gap-3 justify-center">
+                <!-- Draggable answers will be generated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let score = 0;
+        let selectedCity = '';
+        let answerGridPosition = 0;
+        let completeImage = '';
+        
+        // Available cities
+        const cities = [
+            'Amsterdam-300w', 'Barcelona-300w', 'Cairo-300w', 'Frankfurt-300w',
+            'London-300w', 'Madrid-300w', 'Milan-300w', 'Paris-300w',
+            'Rome-300w', 'Turkey-300w', 'Washington-300w'
+        ];
+        
+        // Initialize game
+        function initGame() {
+            console.log('Initializing game...');
+            
+            // Randomly select one city for the complete image
+            selectedCity = getRandomCity();
+            console.log('Selected city:', selectedCity);
+            
+            // Generate the 4x4 grid with one missing piece
+            generateGrid();
+            console.log('Grid generated');
+            
+            // Generate 4 answer options (1 correct + 3 wrong)
+            generateAnswers();
+            console.log('Answers generated');
+            
+            // Setup drop zone
+            setTimeout(setupDropZone, 100);
+        }
+        
+        // Restart game
+        function restartGame() {
+            score = 0;
+            document.getElementById('score').textContent = score;
+            initGame();
+        }
+        
+        // Get random city
+        function getRandomCity() {
+            return cities[Math.floor(Math.random() * cities.length)];
+        }
+        
+        // Generate 4x4 grid with one missing piece
+        function generateGrid() {
+            const gridContainer = document.querySelector('.grid');
+            gridContainer.innerHTML = '';
+            
+            // Randomly select which image will be the answer (A1 to A16)
+            const answerImageNumber = Math.floor(Math.random() * 16) + 1;
+            completeImage = `${selectedCity.split('-')[0]}A${answerImageNumber}.png`;
+            
+            // Set the answer grid position to match the image number (0-indexed)
+            answerGridPosition = answerImageNumber - 1;
+            
+            // Create 4x4 grid showing A1 to A16 images
+            for (let i = 0; i < 16; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'bg-gray-100 flex items-center justify-center relative overflow-hidden';
+                cell.id = `cell-${i}`;
+                
+                if (i === answerGridPosition) {
+                    // This is the missing piece - make it the drop zone
+                    cell.id = 'answer';
+                    cell.classList.add('bg-saudia-green/20');
+                    cell.innerHTML = '<span class="text-saudia-green/50 text-sm">Drop here</span>';
+                } else {
+                    // Show the corresponding A1-A16 image
+                    const imageNumber = i + 1; // A1, A2, A3, ..., A16
+                    const imageName = `${selectedCity.split('-')[0]}A${imageNumber}.png`;
+                    
+                    cell.innerHTML = `<img src="assets/cities/${selectedCity}/${imageName}" alt="City ${imageNumber}" class="w-full h-full object-cover">`;
+                }
+                
+                gridContainer.appendChild(cell);
+            }
+        }
+        
+        // Generate 4 answer options
+        function generateAnswers() {
+            console.log('Generating answers for city:', selectedCity);
+            console.log('Complete image:', completeImage);
+            
+            const answersContainer = document.getElementById('answersContainer');
+            console.log('Answers container:', answersContainer);
+            answersContainer.innerHTML = '';
+            
+            // Create correct answer (the missing piece)
+            const correctAnswer = createDraggableAnswer(selectedCity, completeImage, true);
+            console.log('Correct answer created:', correctAnswer);
+            answersContainer.appendChild(correctAnswer);
+            
+            // Create 3 wrong answers from other cities
+            const wrongCities = cities.filter(city => city !== selectedCity);
+            const selectedWrongCities = getRandomCities(3);
+            console.log('Wrong cities selected:', selectedWrongCities);
+            
+            selectedWrongCities.forEach(city => {
+                const randomImage = getRandomImage(city);
+                const wrongAnswer = createDraggableAnswer(city, randomImage, false);
+                console.log('Wrong answer created for', city, ':', wrongAnswer);
+                answersContainer.appendChild(wrongAnswer);
+            });
+            
+            console.log('Total answers in container:', answersContainer.children.length);
+        }
+        
+        // Get random cities for wrong answers
+        function getRandomCities(count) {
+            const shuffled = [...cities].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
+        }
+        
+        // Get random image from city folder
+        function getRandomImage(cityFolder) {
+            const imageNumbers = Array.from({length: 16}, (_, i) => i + 1);
+            const randomNum = imageNumbers[Math.floor(Math.random() * imageNumbers.length)];
+            return `${cityFolder.split('-')[0]}A${randomNum}.png`;
+        }
+        
+        // Create draggable answer element
+        function createDraggableAnswer(city, imageName, isCorrect) {
+            const answerDiv = document.createElement('div');
+            answerDiv.className = 'w-20 h-20 bg-white border-2 border-saudia-green/30 rounded-lg cursor-grab active:cursor-grabbing flex items-center justify-center overflow-hidden';
+            answerDiv.draggable = true;
+            answerDiv.dataset.city = city;
+            answerDiv.dataset.image = imageName;
+            answerDiv.dataset.correct = isCorrect;
+            
+            answerDiv.innerHTML = `<img src="assets/cities/${city}/${imageName}" alt="City" class="w-full h-full object-cover pointer-events-none">`;
+            
+            // Add drag events
+            answerDiv.addEventListener('dragstart', handleDragStart);
+            answerDiv.addEventListener('dragend', handleDragEnd);
+            
+            return answerDiv;
+        }
+        
+        // Drag and drop functions
+        let draggedElement = null;
+        
+        function handleDragStart(e) {
+            draggedElement = e.target;
+            e.target.style.opacity = '0.5';
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        
+        function handleDragEnd(e) {
+            e.target.style.opacity = '1';
+            draggedElement = null;
+        }
+        
+        // Add drop zone functionality to answer grid
+        function setupDropZone() {
+            const answerGrid = document.getElementById('answer');
+            if (answerGrid) {
+                answerGrid.addEventListener('dragover', handleDragOver);
+                answerGrid.addEventListener('drop', handleDrop);
+            }
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            e.target.style.borderColor = 'rgb(0, 100, 0, 0.6)';
+            e.target.style.backgroundColor = 'rgb(0, 100, 0, 0.2)';
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            
+            if (draggedElement) {
+                const isCorrect = draggedElement.dataset.correct === 'true';
+                
+                if (isCorrect) {
+                    // Correct answer
+                    score++;
+                    document.getElementById('score').textContent = score;
+                    
+                    // Show the correct piece immediately to complete the image
+                    const correctCity = draggedElement.dataset.city;
+                    const correctImage = draggedElement.dataset.image;
+                    e.target.innerHTML = `<img src="assets/cities/${correctCity}/${correctImage}" alt="City piece" class="w-full h-full object-cover">`;
+                    
+                    // Disable all answers
+                    const answers = document.querySelectorAll('#answersContainer > div');
+                    answers.forEach(answer => {
+                        answer.draggable = false;
+                        answer.style.cursor = 'not-allowed';
+                        answer.style.opacity = '0.6';
+                    });
+                    
+                } else {
+                    // Wrong answer
+                    e.target.style.borderColor = 'rgb(220, 38, 38, 0.8)';
+                    e.target.style.backgroundColor = 'rgb(220, 38, 38, 0.2)';
+                    e.target.innerHTML = '<span class="text-red-600 text-lg font-bold">❌ Wrong!</span>';
+                    
+                    // Reset after 1 second
+                    setTimeout(() => {
+                        e.target.style.borderColor = 'rgb(0, 100, 0, 0.3)';
+                        e.target.style.backgroundColor = 'rgb(0, 100, 0, 0.05)';
+                        e.target.innerHTML = '<span class="text-saudia-green/50 text-sm">Drop here</span>';
+                    }, 1000);
+                }
+            }
+        }
+        
+        // Start game when page loads
+        document.addEventListener('DOMContentLoaded', initGame);
+    </script>
+</body>
+</html>

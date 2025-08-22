@@ -30,6 +30,10 @@ app.get('/game', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'game.html'));
 });
 
+app.get('/game2', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'game2.html'));
+});
+
 // Handle form submission
 app.post('/submit-form', (req, res) => {
     const { nama, email, whatsapp } = req.body;

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Saudia Quiz Game</title>
+    <title>Saudia Grid Game</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -27,8 +27,8 @@
     
         <!-- Game Title and Start Screen -->
         <div id="startScreen" class="text-center bg-white/90 backdrop-blur-md rounded-3xl p-8 shadow-2xl border-2 border-saudia-green/20 max-w-4xl w-full relative z-20">
-            <h1 class="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-saudia-green to-saudia-light-green bg-clip-text text-transparent">🎮 Saudia Quiz Game</h1>
-            <p class="text-lg text-saudia-green/80 mb-8">Test your knowledge about your travel Destinations!</p>
+            <h1 class="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-saudia-green to-saudia-light-green bg-clip-text text-transparent">🎮 Saudia Grid Game</h1>
+            <p class="text-lg text-saudia-green/80 mb-8">Complete the city image by finding the missing piece!</p>
             <button id="startBtn" class="bg-gradient-to-r from-saudia-green to-saudia-light-green text-white px-8 py-4 rounded-2xl text-xl font-bold hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
                 Mulai Game
             </button>
@@ -48,33 +48,25 @@
 
                                                 <!-- Game Screen -->
                     <div id="gameScreen" class="hidden w-full h-screen flex items-center justify-center">
-                        <!-- Square Game Container (80svh, 1:1 aspect ratio) -->
-                        <div class="w-[80svh] h-[80svh] bg-white rounded-lg shadow-lg border-2 border-saudia-green/20 overflow-hidden">
-                            <!-- Level and Timer (inside square) -->
-                            <div class="flex justify-between items-center p-4 bg-saudia-green/10 h-16">
+                        <!-- Square Game Container (95vmin, 1:1 aspect ratio) -->
+                        <div class="w-[95vmin] h-[95vmin] bg-white rounded-lg shadow-lg border-2 border-saudia-green/20 overflow-hidden flex flex-col items-center">
+                            <!-- Header -->
+                            <div class="flex justify-between items-center p-4 bg-saudia-green/10 h-16 w-full">
                                 <div class="text-lg font-bold text-saudia-green">Level: <span id="currentLevel">1</span>/6</div>
-                                <div class="text-lg font-bold text-saudia-green">Waktu: <span id="gameTimer">30</span>s</div>
+                                <div class="text-lg font-bold text-saudia-green">Score: <span id="score">0</span></div>
+                                <div class="text-lg font-bold text-saudia-green">Time: <span id="gameTimer">30</span>s</div>
                             </div>
                             
-                            <!-- Question Section (remaining height minus answer section) -->
-                            <div class="flex-1 p-4 flex items-center justify-center min-h-0">
-                                <img id="questionImage" src="" alt="Question" class="w-full h-[50svh] object-contain rounded-lg transition-opacity duration-300">
+                            <!-- 4x4 Grid -->
+                            <div class="grid grid-cols-4 grid-rows-4 flex-1 p-4 h-[50svh] w-[50svh]!important">
+                                <!-- Grid cells will be generated here -->
                             </div>
                             
-                            <!-- Answer Section (fixed height) -->
-                            <div class="h-24 flex items-center justify-center gap-2 px-4 pb-4">
-                                <button class="answer-btn flex-1 h-fit bg-white border-2 border-saudia-green/30 hover:bg-saudia-green/10 hover:border-saudia-green/50 transition-all duration-300 rounded-lg flex items-center justify-center" data-answer="0">
-                                    <img class="w-full h-auto object-contain rounded transition-opacity duration-300" alt="Answer 1">
-                                </button>
-                                <button class="answer-btn flex-1 h-fit bg-white border-2 border-saudia-green/30 hover:bg-saudia-green/10 hover:border-saudia-green/50 transition-all duration-300 rounded-lg flex items-center justify-center" data-answer="1">
-                                    <img class="w-full h-auto object-contain rounded transition-opacity duration-300" alt="Answer 2">
-                                </button>
-                                <button class="answer-btn flex-1 h-fit bg-white border-2 border-saudia-green/30 hover:bg-saudia-green/10 hover:border-saudia-green/50 transition-all duration-300 rounded-lg flex items-center justify-center" data-answer="2">
-                                    <img class="w-full h-auto object-contain rounded transition-opacity duration-300" alt="Answer 3">
-                                </button>
-                                <button class="answer-btn flex-1 h-fit bg-white border-2 border-saudia-green/30 hover:bg-saudia-green/10 hover:border-saudia-green/50 transition-all duration-300 rounded-lg flex items-center justify-center" data-answer="3">
-                                    <img class="w-full h-auto object-contain rounded transition-opacity duration-300" alt="Answer 4">
-                                </button>
+                            <!-- Draggable Answers Section -->
+                            <div class="p-4 bg-saudia-green/5 border-t border-saudia-green/20 w-full">
+                                <div id="answersContainer" class="flex gap-3 justify-center">
+                                    <!-- Draggable answers will be generated here -->
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -97,39 +89,16 @@
         let countdownInterval;
         let gameTimerInterval;
         let redirectInterval;
+        let selectedCity = '';
+        let answerGridPosition = 0;
+        let completeImage = '';
+        let usedCities = []; // Track used cities to ensure uniqueness
 
-        // Game data with image paths
-        const gameData = [
-            {
-                questionImage: "assets/images/1-Question.png",
-                correctAnswerImage: "assets/images/1-Answer.png",
-                correct: 0 // Will be randomized
-            },
-            {
-                questionImage: "assets/images/2-Question.png",
-                correctAnswerImage: "assets/images/2-Answer.png",
-                correct: 0 // Will be randomized
-            },
-            {
-                questionImage: "assets/images/3-Question.png",
-                correctAnswerImage: "assets/images/3-Answer.png",
-                correct: 0 // Will be randomized
-            },
-            {
-                questionImage: "assets/images/4-Question.png",
-                correctAnswerImage: "assets/images/4-Answer.png",
-                correct: 0 // Will be randomized
-            },
-            {
-                questionImage: "assets/images/5-Question.png",
-                correctAnswerImage: "assets/images/5-Answer.png",
-                correct: 0 // Will be randomized
-            },
-            {
-                questionImage: "assets/images/6-Question.png",
-                correctAnswerImage: "assets/images/6-Answer.png",
-                correct: 0 // Will be randomized
-            }
+        // Available cities
+        const cities = [
+            'Amsterdam-300w', 'Barcelona-300w', 'Cairo-300w', 'Frankfurt-300w',
+            'London-300w', 'Madrid-300w', 'Milan-300w', 'Paris-300w',
+            'Rome-300w', 'Turkey-300w', 'Washington-300w'
         ];
 
         // DOM elements
@@ -140,9 +109,8 @@
         const startBtn = document.getElementById('startBtn');
         const countdownTimer = document.getElementById('countdownTimer');
         const currentLevelSpan = document.getElementById('currentLevel');
+        const scoreSpan = document.getElementById('score');
         const gameTimerSpan = document.getElementById('gameTimer');
-        const questionImage = document.getElementById('questionImage');
-        const answerBtns = document.querySelectorAll('.answer-btn');
         const finalScore = document.getElementById('finalScore');
         const gameDuration = document.getElementById('gameDuration');
         const redirectTimer = document.getElementById('redirectTimer');
@@ -156,10 +124,23 @@
             }
             return shuffled;
         }
+        
+        // Drag and drop functions
+        let draggedElement = null;
+        
+        function handleDragStart(e) {
+            draggedElement = e.target;
+            e.target.style.opacity = '0.5';
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        
+        function handleDragEnd(e) {
+            e.target.style.opacity = '1';
+            draggedElement = null;
+        }
 
         // Event listeners
         startBtn.addEventListener('click', startGame);
-        answerBtns.forEach(btn => btn.addEventListener('click', handleAnswer));
 
         // Game functions
         function startGame() {
@@ -181,156 +162,237 @@
             }, 1000);
         }
 
-                            function startPlaying() {
-                        // Preload all game assets before starting
-                        preloadAssets().then(() => {
-                            gameState = 'playing';
-                            countdownScreen.classList.add('hidden');
-                            gameScreen.classList.remove('hidden');
-                            
-                            gameStartTime = Date.now();
-                            currentLevel = 1;
-                            score = 0;
-                            totalTimeUsed = 0;
-                            
-                            loadLevel();
-                            startGameTimer();
-                        });
-                    }
+        function startPlaying() {
+            gameState = 'playing';
+            countdownScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            
+            gameStartTime = Date.now();
+            currentLevel = 1;
+            score = 0;
+            totalTimeUsed = 0;
+            usedCities = [];
+            scoreSpan.textContent = score;
+            
+            initGame();
+            startGameTimer();
+        }
                     
-                    // Function to preload all game assets
-                    function preloadAssets() {
-                        return new Promise((resolve) => {
-                            const assets = [
-                                // Question images
-                                "assets/images/1-Question.png",
-                                "assets/images/2-Question.png",
-                                "assets/images/3-Question.png",
-                                "assets/images/4-Question.png",
-                                "assets/images/5-Question.png",
-                                "assets/images/6-Question.png",
-                                // Answer images
-                                "assets/images/1-Answer.png",
-                                "assets/images/2-Answer.png",
-                                "assets/images/3-Answer.png",
-                                "assets/images/4-Answer.png",
-                                "assets/images/5-Answer.png",
-                                "assets/images/6-Answer.png"
-                            ];
-                            
-                            let loadedCount = 0;
-                            const totalAssets = assets.length;
-                            
-                            // Show loading progress
-                            const countdownTitle = document.getElementById('countdownTitle');
-                            const countdownTimer = document.getElementById('countdownTimer');
-                            const loadingProgress = document.getElementById('loadingProgress');
-                            const progressBar = document.getElementById('progressBar');
-                            
-                            countdownTitle.textContent = 'Loading Game Assets...';
-                            countdownTimer.textContent = '0%';
-                            loadingProgress.classList.remove('hidden');
-                            
-                            assets.forEach((src) => {
-                                const img = new Image();
-                                img.onload = () => {
-                                    loadedCount++;
-                                    // Update loading progress
-                                    const progress = Math.round((loadedCount / totalAssets) * 100);
-                                    countdownTimer.textContent = `${progress}%`;
-                                    progressBar.style.width = `${progress}%`;
-                                    
-                                    if (loadedCount === totalAssets) {
-                                        // All assets loaded, show countdown
-                                        setTimeout(() => {
-                                            countdownTitle.textContent = 'Game akan dimulai dalam:';
-                                            countdownTimer.textContent = '3';
-                                            loadingProgress.classList.add('hidden');
-                                            resolve();
-                                        }, 1000);
-                                    }
-                                };
-                                img.onerror = () => {
-                                    console.error(`Failed to load image: ${src}`);
-                                    loadedCount++;
-                                    if (loadedCount === totalAssets) {
-                                        // Continue even if some images failed
-                                        setTimeout(() => {
-                                            countdownTitle.textContent = 'Game akan dimulai dalam:';
-                                            countdownTimer.textContent = '3';
-                                            loadingProgress.classList.add('hidden');
-                                            resolve();
-                                        }, 1000);
-                                    }
-                                };
-                                img.src = src;
-                            });
-                        });
-                    }
-
-        function loadLevel() {
-            if (currentLevel > gameData.length) {
-                endGame();
-                return;
-            }
-
-            const levelData = gameData[currentLevel - 1];
-            currentLevelSpan.textContent = currentLevel;
+        // Initialize game
+        function initGame() {
+            console.log('Initializing game...');
             
-            // Create array of all answer images
-            const allAnswerImages = [
-                "assets/images/1-Answer.png",
-                "assets/images/2-Answer.png", 
-                "assets/images/3-Answer.png",
-                "assets/images/4-Answer.png",
-                "assets/images/5-Answer.png",
-                "assets/images/6-Answer.png"
-            ];
+            // Randomly select one city for the complete image
+            selectedCity = getRandomCity();
+            console.log('Selected city:', selectedCity);
             
-            // Remove the correct answer from the pool
-            const otherAnswers = allAnswerImages.filter(img => img !== levelData.correctAnswerImage);
+            // Generate the 4x4 grid with one missing piece
+            generateGrid();
+            console.log('Grid generated');
             
-            // Randomly select 3 wrong answers
-            const shuffledWrongAnswers = shuffleArray(otherAnswers).slice(0, 3);
+            // Generate 4 answer options (1 correct + 3 wrong)
+            generateAnswers();
+            console.log('Answers generated');
             
-            // Add correct answer and shuffle all 4 answers
-            const allAnswers = [...shuffledWrongAnswers, levelData.correctAnswerImage];
-            const shuffledAnswers = shuffleArray(allAnswers);
+            // Setup drop zone
+            setTimeout(setupDropZone, 100);
+        }
+        
+        // Get random city (ensuring uniqueness)
+        function getRandomCity() {
+            // Filter out cities that have already been used
+            const availableCities = cities.filter(city => !usedCities.includes(city));
             
-            // Track loading progress
-            let imagesLoaded = 0;
-            const totalImages = 5; // 1 question + 4 answers
-            
-            function onImageLoad() {
-                imagesLoaded++;
-                if (imagesLoaded === totalImages) {
-                    // All images loaded, enable buttons and show content
-                    answerBtns.forEach(btn => {
-                        btn.classList.remove('bg-green-500', 'bg-red-500');
-                        btn.classList.add('bg-white');
-                        btn.disabled = false;
-                    });
-                }
+            if (availableCities.length === 0) {
+                // If all cities have been used, reset the used cities array
+                usedCities = [];
+                return cities[Math.floor(Math.random() * cities.length)];
             }
             
-            // Load question image
-            questionImage.onload = onImageLoad;
-            questionImage.src = levelData.questionImage;
-            
-            // Load answer images
-            answerBtns.forEach((btn, index) => {
-                const img = btn.querySelector('img');
-                img.onload = onImageLoad;
-                img.src = shuffledAnswers[index];
-                btn.dataset.answer = index;
-                
-                // Initially disable buttons and show loading state
-                btn.disabled = true;
-                btn.classList.remove('bg-green-500', 'bg-red-500', 'bg-white');
-                btn.classList.add('bg-gray-200');
-            });
+            // Select a random city from available ones
+            const selectedCity = availableCities[Math.floor(Math.random() * availableCities.length)];
+            usedCities.push(selectedCity);
+            return selectedCity;
         }
 
+        // Generate 4x4 grid with one missing piece
+        function generateGrid() {
+            const gridContainer = document.querySelector('.grid');
+            gridContainer.innerHTML = '';
+            
+            // Randomly select which image will be the answer (A1 to A16)
+            const answerImageNumber = Math.floor(Math.random() * 16) + 1;
+            completeImage = `${selectedCity.split('-')[0]}A${answerImageNumber}.png`;
+            
+            // Set the answer grid position to match the image number (0-indexed)
+            answerGridPosition = answerImageNumber - 1;
+            
+            // Create 4x4 grid showing A1 to A16 images
+            for (let i = 0; i < 16; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'bg-gray-100 flex items-center justify-center relative overflow-hidden';
+                cell.id = `cell-${i}`;
+                
+                if (i === answerGridPosition) {
+                    // This is the missing piece - make it the drop zone
+                    cell.id = 'answer';
+                    cell.classList.add('bg-saudia-green/20');
+                    cell.innerHTML = '<span class="text-saudia-green/50 text-sm">Drop here</span>';
+                } else {
+                    // Show the corresponding A1-A16 image
+                    const imageNumber = i + 1; // A1, A2, A3, ..., A16
+                    const imageName = `${selectedCity.split('-')[0]}A${imageNumber}.png`;
+                    
+                    cell.innerHTML = `<img src="assets/cities/${selectedCity}/${imageName}" alt="City ${imageNumber}" class="w-full h-full object-cover">`;
+                }
+                
+                gridContainer.appendChild(cell);
+            }
+        }
+        
+        // Generate 4 answer options
+        function generateAnswers() {
+            console.log('Generating answers for city:', selectedCity);
+            console.log('Complete image:', completeImage);
+            
+            const answersContainer = document.getElementById('answersContainer');
+            console.log('Answers container:', answersContainer);
+            answersContainer.innerHTML = '';
+            
+            // Create correct answer (the missing piece)
+            const correctAnswer = createDraggableAnswer(selectedCity, completeImage, true);
+            console.log('Correct answer created:', correctAnswer);
+            answersContainer.appendChild(correctAnswer);
+            
+            // Create 3 wrong answers from other cities
+            const wrongCities = cities.filter(city => city !== selectedCity);
+            const selectedWrongCities = getRandomCities(3);
+            console.log('Wrong cities selected:', selectedWrongCities);
+            
+            selectedWrongCities.forEach(city => {
+                const randomImage = getRandomImage(city);
+                const wrongAnswer = createDraggableAnswer(city, randomImage, false);
+                console.log('Wrong answer created for', city, ':', wrongAnswer);
+                answersContainer.appendChild(wrongAnswer);
+            });
+            
+            console.log('Total answers in container:', answersContainer.children.length);
+        }
+        
+        // Get random cities for wrong answers
+        function getRandomCities(count) {
+            const shuffled = [...cities].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, count);
+        }
+        
+        // Get random image from city folder
+        function getRandomImage(cityFolder) {
+            const imageNumbers = Array.from({length: 16}, (_, i) => i + 1);
+            const randomNum = imageNumbers[Math.floor(Math.random() * imageNumbers.length)];
+            return `${cityFolder.split('-')[0]}A${randomNum}.png`;
+        }
+        
+        // Create draggable answer element
+        function createDraggableAnswer(city, imageName, isCorrect) {
+            const answerDiv = document.createElement('div');
+            answerDiv.className = 'w-20 h-20 bg-white border-2 border-saudia-green/30 rounded-lg cursor-grab active:cursor-grabbing flex items-center justify-center overflow-hidden';
+            answerDiv.draggable = true;
+            answerDiv.dataset.city = city;
+            answerDiv.dataset.image = imageName;
+            answerDiv.dataset.correct = isCorrect;
+            
+            answerDiv.innerHTML = `<img src="assets/cities/${city}/${imageName}" alt="City" class="w-full h-full object-cover pointer-events-none">`;
+            
+            // Add drag events
+            answerDiv.addEventListener('dragstart', handleDragStart);
+            answerDiv.addEventListener('dragend', handleDragEnd);
+            
+            return answerDiv;
+        }
+
+        // Add drop zone functionality to answer grid
+        function setupDropZone() {
+            const answerGrid = document.getElementById('answer');
+            if (answerGrid) {
+                answerGrid.addEventListener('dragover', handleDragOver);
+                answerGrid.addEventListener('drop', handleDrop);
+            }
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            e.target.style.borderColor = 'rgb(0, 100, 0, 0.6)';
+            e.target.style.backgroundColor = 'rgb(0, 100, 0, 0.2)';
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            
+            if (draggedElement) {
+                const isCorrect = draggedElement.dataset.correct === 'true';
+                
+                if (isCorrect) {
+                    // Correct answer
+                    score++;
+                    scoreSpan.textContent = score;
+                    
+                    // Show the correct piece immediately to complete the image
+                    const correctCity = draggedElement.dataset.city;
+                    const correctImage = draggedElement.dataset.image;
+                    e.target.innerHTML = `<img src="assets/cities/${correctCity}/${correctImage}" alt="City piece" class="w-full h-full object-cover">`;
+                    
+                    // Disable all answers
+                    const answers = document.querySelectorAll('#answersContainer > div');
+                    answers.forEach(answer => {
+                        answer.draggable = false;
+                        answer.style.cursor = 'not-allowed';
+                        answer.style.opacity = '0.6';
+                    });
+                    
+                    // Wait 1 second then go to next question
+                    setTimeout(() => {
+                        currentLevel++;
+                        clearInterval(gameTimerInterval);
+                        if (currentLevel > 6) {
+                            endGame();
+                        } else {
+                            currentLevelSpan.textContent = currentLevel;
+                            initGame();
+                            startGameTimer();
+                        }
+                    }, 1000);
+                    
+                } else {
+                    // Wrong answer
+                    e.target.style.borderColor = 'rgb(220, 38, 38, 0.8)';
+                    e.target.style.backgroundColor = 'rgb(220, 38, 38, 0.2)';
+                    e.target.innerHTML = '<span class="text-red-600 text-lg font-bold">❌ Wrong!</span>';
+                    
+                    // Reset after 1 second
+                    setTimeout(() => {
+                        e.target.style.borderColor = 'rgb(0, 100, 0, 0.3)';
+                        e.target.style.backgroundColor = 'rgb(0, 100, 0, 0.05)';
+                        e.target.innerHTML = '<span class="text-saudia-green/50 text-sm">Drop here</span>';
+                    }, 1000);
+                }
+            }
+        }
+
+        // Restart game
+        function restartGame() {
+            score = 0;
+            currentLevel = 1;
+            totalTimeUsed = 0;
+            usedCities = [];
+            scoreSpan.textContent = score;
+            currentLevelSpan.textContent = currentLevel;
+            gameTimerSpan.textContent = '30';
+            initGame();
+            startGameTimer();
+        }
+        
+        // Timer functions
         function startGameTimer() {
             // Calculate remaining time from total 30 seconds
             let timeLeft = 30 - totalTimeUsed;
@@ -347,85 +409,7 @@
                 }
             }, 1000);
         }
-
-        function handleAnswer(event) {
-            // Ensure we get the button element, not the image
-            const selectedButton = event.target.closest('.answer-btn') || event.target;
-            const selectedImg = selectedButton.querySelector('img');
-            
-            if (!selectedImg) {
-                console.error('No image found in button');
-                return;
-            }
-            
-            const selectedImageSrc = selectedImg.src;
-            const correctAnswerImage = gameData[currentLevel - 1].correctAnswerImage;
-            
-            // Disable all buttons
-            answerBtns.forEach(btn => btn.disabled = true);
-            
-            // Show correct/incorrect based on image source
-            if (selectedImageSrc.includes(correctAnswerImage.split('/').pop())) {
-                selectedButton.classList.remove('bg-white');
-                selectedButton.classList.add('bg-green-500');
-                score++;
-            } else {
-                selectedButton.classList.remove('bg-white');
-                selectedButton.classList.add('bg-red-500');
-                
-                // Show correct answer by finding the button with correct image
-                answerBtns.forEach(btn => {
-                    const img = btn.querySelector('img');
-                    if (img && img.src.includes(correctAnswerImage.split('/').pop())) {
-                        btn.classList.remove('bg-white');
-                        btn.classList.add('bg-green-500');
-                    }
-                });
-            }
-            
-            // Wait 1 second for visual feedback, then transition to next level
-            setTimeout(() => {
-                // Fade out current question and answer images
-                questionImage.style.opacity = '0';
-                answerBtns.forEach(btn => {
-                    const img = btn.querySelector('img');
-                    img.style.opacity = '0';
-                });
-                
-                setTimeout(() => {
-                    currentLevel++;
-                    clearInterval(gameTimerInterval);
-                    
-                    // Load new level content first
-                    loadLevel();
-                    
-                    // Wait for all images to load before starting timer and fading in
-                    const checkImagesLoaded = () => {
-                        const questionLoaded = questionImage.complete && questionImage.naturalHeight !== 0;
-                        const answersLoaded = Array.from(answerBtns).every(btn => {
-                            const img = btn.querySelector('img');
-                            return img.complete && img.naturalHeight !== 0;
-                        });
-                        
-                        if (questionLoaded && answersLoaded) {
-                            // All images loaded, start timer and fade in
-                            startGameTimer();
-                            questionImage.style.opacity = '1';
-                            answerBtns.forEach(btn => {
-                                const img = btn.querySelector('img');
-                                img.style.opacity = '1';
-                            });
-                        } else {
-                            // Check again in 50ms
-                            setTimeout(checkImagesLoaded, 50);
-                        }
-                    };
-                    
-                    checkImagesLoaded();
-                }, 300);
-            }, 1000);
-        }
-
+        
         function handleTimeout() {
             // When timeout occurs, the remaining time becomes 0, so totalTimeUsed becomes 30
             totalTimeUsed = 30;
@@ -444,7 +428,7 @@
             gameDuration.textContent = remainingTime;
             
             // Redirect after 5 seconds
-            let redirectCountdown = 10;
+            let redirectCountdown = 5;
             redirectTimer.textContent = redirectCountdown;
             
             redirectInterval = setInterval(() => {
@@ -457,6 +441,11 @@
                 }
             }, 1000);
         }
+        
+        // Start game when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            // Game will start when start button is clicked
+        });
     </script>
 </body>
 </html>
