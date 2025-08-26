@@ -5,6 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Saudia Quiz Game</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @font-face {
+        font-family: 'SaudiaSans';
+        src: url('./assets/font/SaudiaSans-Regular.otf') format('opentype');
+        font-weight: 400;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: 'SaudiaSans';
+        src: url('./assets/font/SaudiaSans-Bold.otf') format('opentype');
+        font-weight: 700;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: 'SaudiaSans';
+        src: url('./assets/font/SaudiaSans-Light.otf') format('opentype');
+        font-weight: 300;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: 'SaudiaSans';
+        src: url('./assets/font/SaudiaSans-Medium.otf') format('opentype');
+        font-weight: 500;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: 'SaudiaSans';
+        src: url('./assets/font/SaudiaSans-SemiBold.otf') format('opentype');
+        font-weight: 600;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: 'SaudiaSans';
+        src: url('./assets/font/SaudiaSans-ExtraBold.otf') format('opentype');
+        font-weight: 800;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: 'SaudiaSans';
+        src: url('./assets/font/SaudiaSans-Black.otf') format('opentype');
+        font-weight: 900;
+        font-style: normal;
+      }
+      
+      body {
+        font-family: 'SaudiaSans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+    </style>
     <script>
       tailwind.config = {
         theme: {
@@ -14,6 +62,9 @@
               "saudia-light-green": "#228B22",
               "saudia-blue": "#87CEEB",
               "saudia-light-blue": "#98FB98",
+            },
+            fontFamily: {
+              'saudia': ['SaudiaSans', 'sans-serif'],
             },
           },
         },
@@ -38,7 +89,7 @@
     <!-- Game Title and Start Screen -->
     <div
       id="startScreen"
-      class="text-center h-[70svh] flex flex-col justify-center items-center w-full relative z-20 "
+      class="text-center h-[70svh] flex flex-col justify-center items-center w-full relative z-20"
     >
       <h1 class="text-4xl md:text-5xl font-bold mb-[2svh]">Saudia Quiz Game</h1>
       <p class="text-lg">
@@ -103,44 +154,62 @@
 
       <!-- 4x4 Grid -->
       <div
-        class="grid grid-cols-4 grid-rows-4  h-[50svh] w-[50svh] bg-white/80 rounded-lg mt-[2svh]"
+        class="grid grid-cols-4 grid-rows-4 h-[50svh] w-[50svh] bg-white/80 rounded-lg mt-[2svh]"
       >
         <!-- Grid cells will be generated here -->
       </div>
 
       <div
-          class="p-4 bg-white/80 border border-saudia-green/20 w-fit rounded-lg mt-4"
-        >
-          <div id="answersContainer" class="flex gap-3 justify-center">
-            <!-- Draggable answers will be generated here -->
-          </div>
+        class="p-4 bg-white/80 border border-saudia-green/20 w-fit rounded-lg mt-4"
+      >
+        <div id="answersContainer" class="flex gap-3 justify-center">
+          <!-- Draggable answers will be generated here -->
         </div>
+      </div>
     </div>
 
     <!-- Game Over Screen -->
     <div
       id="gameOverScreen"
-      class="hidden text-center h-[70svh] flex flex-col justify-center items-center w-full relative z-20  mt-[2svh]"
+      class="hidden text-center h-[70svh] flex flex-col justify-center items-center w-full relative z-20 mt-[2svh]"
     >
-    <div class="flex flex-col bg-white rounded-lg p-[4svh] border border-saudia-green/20">
+      <div
+        class="flex flex-col bg-white rounded-lg p-[4svh] border border-saudia-green/20"
+      >
         <h2 class="text-[3svh] font-bold text-saudia-green mb-6">
-            🎉 Game Selesai!
-          </h2>
-          <div class="text-[2.4svh] text-saudia-green">
-            Skor Anda: <span id="finalScore" class="font-bold">0</span>/6
-          </div>
-          <div class="text-[2.4svh] text-saudia-green mb-6">
-            Waktu Tersisa: <span id="gameDuration" class="font-bold">0</span> detik
-          </div>
-          <p class="text-[2svh] text-saudia-green/70">
-            Kembali ke halaman utama dalam
-            <span id="redirectTimer">5</span> detik...
-          </p>
-    </div>
-      
+          🎉 Game Selesai!
+        </h2>
+        <div class="text-[2.4svh] text-saudia-green">
+          Skor Anda: <span id="finalScore" class="font-bold">0</span>/6
+        </div>
+        <div class="text-[2.4svh] text-saudia-green mb-6">
+          Waktu Tersisa:
+          <span id="gameDuration" class="font-bold">0</span> detik
+        </div>
+        <p class="text-[2svh] text-saudia-green/70">
+          Kembali ke halaman utama dalam
+          <span id="redirectTimer">5</span> detik...
+        </p>
+      </div>
     </div>
 
     <script>
+      // WebSocket connection
+      const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const ws = new WebSocket(`${wsProtocol}//${window.location.host}`);
+      
+      ws.onopen = function() {
+        console.log("WebSocket connected from game page");
+      };
+      
+      ws.onerror = function(error) {
+        console.error("WebSocket error:", error);
+      };
+      
+      ws.onclose = function() {
+        console.log("WebSocket disconnected from game page");
+      };
+
       // Game state
       let gameState = "start"; // start, countdown, playing, gameOver
       let currentLevel = 1;
@@ -348,22 +417,24 @@
 
         // Create 3 wrong answers from other cities
         const wrongCities = cities.filter((city) => city !== selectedCity);
-        
+
         // Ensure we have enough different cities (need at least 3)
         if (wrongCities.length < 3) {
-          console.warn('Not enough different cities available, some wrong answers may repeat');
+          console.warn(
+            "Not enough different cities available, some wrong answers may repeat"
+          );
         }
-        
+
         const selectedWrongCities = getRandomCities(3, wrongCities);
         console.log("Wrong cities selected:", selectedWrongCities);
 
         selectedWrongCities.forEach((city) => {
           // Double-check that this city is different from the question city
           if (city === selectedCity) {
-            console.error('Wrong answer city matches question city!', city);
+            console.error("Wrong answer city matches question city!", city);
             return; // Skip this wrong answer
           }
-          
+
           const randomImage = getRandomImage(city);
           const wrongAnswer = createDraggableAnswer(city, randomImage, false);
           console.log("Wrong answer created for", city, ":", wrongAnswer);
@@ -439,13 +510,13 @@
             // Show the correct piece immediately to complete the image
             const correctCity = draggedElement.dataset.city;
             const correctImage = draggedElement.dataset.image;
-            
+
             // Preserve the cell structure and only update the content
             e.target.innerHTML = `<img src="assets/cities/${correctCity}/${correctImage}" alt="City piece" class="w-full h-full object-cover">`;
-            
+
             // Remove the drop zone styling and make it look like a regular cell
-            e.target.classList.remove('bg-white');
-            e.target.classList.add('bg-gray-100');
+            e.target.classList.remove("bg-white");
+            e.target.classList.add("bg-gray-100");
 
             // Disable all answers
             const answers = document.querySelectorAll(
@@ -534,6 +605,18 @@
 
         finalScore.textContent = score;
         gameDuration.textContent = remainingTime;
+
+        // Send WebSocket signal to form.html
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: 'game-over',
+            data: {
+              score: score,
+              remainingTime: remainingTime,
+              level: currentLevel
+            }
+          }));
+        }
 
         // Redirect after 5 seconds
         let redirectCountdown = 5;

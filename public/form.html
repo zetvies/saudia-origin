@@ -5,6 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Book Flight - Saudia Travel Fair</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @font-face {
+        font-family: 'SaudiaSans';
+        src: url('./assets/font/SaudiaSans-Regular.otf') format('opentype');
+        font-weight: 400;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: 'SaudiaSans';
+        src: url('./assets/font/SaudiaSans-Bold.otf') format('opentype');
+        font-weight: 700;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: 'SaudiaSans';
+        src: url('./assets/font/SaudiaSans-Light.otf') format('opentype');
+        font-weight: 300;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: 'SaudiaSans';
+        src: url('./assets/font/SaudiaSans-Medium.otf') format('opentype');
+        font-weight: 500;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: 'SaudiaSans';
+        src: url('./assets/font/SaudiaSans-SemiBold.otf') format('opentype');
+        font-weight: 600;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: 'SaudiaSans';
+        src: url('./assets/font/SaudiaSans-ExtraBold.otf') format('opentype');
+        font-weight: 800;
+        font-style: normal;
+      }
+      @font-face {
+        font-family: 'SaudiaSans';
+        src: url('./assets/font/SaudiaSans-Black.otf') format('opentype');
+        font-weight: 900;
+        font-style: normal;
+      }
+      
+      body {
+        font-family: 'SaudiaSans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+    </style>
     <script>
         tailwind.config = {
             theme: {
@@ -14,7 +62,10 @@
                         'saudia-light-green': '#228B22',
                         'saudia-blue': '#87CEEB',
                         'saudia-light-blue': '#98FB98'
-                    }
+                    },
+                    fontFamily: {
+                        'saudia': ['SaudiaSans', 'sans-serif'],
+                    },
                 }
             }
         }
@@ -86,6 +137,22 @@
           Form berhasil disubmit!<br/> Silakan lanjut ke game di layar.
         </div>
 
+        <div id="gameOverScreen" class="hidden flex flex-col bg-white rounded-lg p-[4svh] border border-saudia-green/20">
+            <h2 class="text-[3svh] font-bold text-saudia-green mb-6">
+                🎉 Game Selesai!
+              </h2>
+              <div class="text-[2.4svh] text-saudia-green">
+                Skor Anda: <span id="finalScore" class="font-bold">0</span>/6
+              </div>
+              <div class="text-[2.4svh] text-saudia-green mb-6">
+                Waktu Tersisa: <span id="gameDuration" class="font-bold">0</span> detik
+              </div>
+              <p class="text-[2svh] text-saudia-green/70">
+                Kembali ke halaman utama dalam
+                <span id="redirectTimer">5</span> detik...
+              </p>
+        </div>
+
     </div>
 
     <script>
@@ -101,6 +168,9 @@
             const message = JSON.parse(event.data);
             if (message.type === 'form-submitted') {
                 console.log('Form submitted via WebSocket:', message.data);
+            } else if (message.type === 'game-over') {
+                console.log('Game over detected via WebSocket:', message.data);
+                showGameOverScreen(message.data);
             }
         };
         
@@ -146,6 +216,38 @@
                 alert('Error submitting form. Please try again.');
             });
         });
+        
+        // Function to show game over screen
+        function showGameOverScreen(gameData) {
+            // Hide the form and success message
+            const form = document.getElementById('contactForm');
+            const successMessage = document.getElementById('successMessage');
+            form.classList.add('hidden');
+            successMessage.classList.add('hidden');
+            
+            // Update game over screen with actual data
+            document.getElementById('finalScore').textContent = gameData.score;
+            document.getElementById('gameDuration').textContent = gameData.remainingTime;
+            
+            // Show game over screen
+            const gameOverScreen = document.getElementById('gameOverScreen');
+            gameOverScreen.classList.remove('hidden');
+            
+            // Start redirect countdown
+            let redirectCountdown = 5;
+            const redirectTimer = document.getElementById('redirectTimer');
+            redirectTimer.textContent = redirectCountdown;
+            
+            const redirectInterval = setInterval(() => {
+                redirectCountdown--;
+                redirectTimer.textContent = redirectCountdown;
+                
+                if (redirectCountdown <= 0) {
+                    clearInterval(redirectInterval);
+                    window.location.href = '/';
+                }
+            }, 1000);
+        }
     </script>
 </body>
 </html>
