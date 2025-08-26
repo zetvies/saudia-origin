@@ -148,7 +148,7 @@
           Score: <span id="score">0</span>
         </div>
         <div class="font-bold text-saudia-green">
-          Time: <span id="gameTimer">30</span>s
+          Time: <span id="gameTimer">60</span>s
         </div>
       </div>
 
@@ -180,7 +180,7 @@
           🎉 Game Selesai!
         </h2>
         <div class="text-[2.4svh] text-saudia-green">
-          Skor Anda: <span id="finalScore" class="font-bold">0</span>/6
+          Skor Anda: <span id="finalScore" class="font-bold">0</span>/18
         </div>
         <div class="text-[2.4svh] text-saudia-green mb-6">
           Waktu Tersisa:
@@ -605,10 +605,19 @@
               // Preserve the cell structure and only update the content
               e.target.innerHTML = `<img src="assets/cities/${correctCity}/${correctImage}" alt="City piece" class="w-full h-full object-cover">`;
 
-              // Keep the missing-piece class but mark as completed
+              // Remove the drop zone styling and make it look like a regular cell
               e.target.classList.remove("bg-white");
               e.target.classList.add("bg-gray-100");
+
+              // Mark this piece as completed instead of removing from arrays
               e.target.dataset.completed = "true";
+
+              // Disable the used answer element
+              draggedElement.draggable = false;
+              draggedElement.style.cursor = "not-allowed";
+              draggedElement.style.opacity = "0.6";
+              draggedElement.classList.remove("cursor-grab", "active:cursor-grabbing");
+              draggedElement.classList.add("cursor-not-allowed");
 
               // Count completed pieces
               completedPiecesCount++;
@@ -692,7 +701,7 @@
         completedPiecesCount = 0;
         scoreSpan.textContent = score;
         currentLevelSpan.textContent = currentLevel;
-        gameTimerSpan.textContent = "30";
+        gameTimerSpan.textContent = "60";
         
         // Clear any existing game state
         const gameScreen = document.getElementById("gameScreen");
@@ -712,8 +721,8 @@
 
       // Timer functions
       function startGameTimer() {
-        // Calculate remaining time from total 30 seconds
-        let timeLeft = 30 - totalTimeUsed;
+        // Calculate remaining time from total 60 seconds
+        let timeLeft = 60 - totalTimeUsed;
         gameTimerSpan.textContent = timeLeft;
 
         gameTimerInterval = setInterval(() => {
@@ -729,8 +738,8 @@
       }
 
       function handleTimeout() {
-        // When timeout occurs, the remaining time becomes 0, so totalTimeUsed becomes 30
-        totalTimeUsed = 30;
+        // When timeout occurs, the remaining time becomes 0, so totalTimeUsed becomes 60
+        totalTimeUsed = 60;
         endGame();
       }
 
@@ -739,8 +748,8 @@
         gameScreen.classList.add("hidden");
         gameOverScreen.classList.remove("hidden");
 
-        // Calculate remaining time from total 30 seconds
-        const remainingTime = 30 - totalTimeUsed;
+        // Calculate remaining time from total 60 seconds
+        const remainingTime = 60 - totalTimeUsed;
 
         finalScore.textContent = score;
         gameDuration.textContent = remainingTime;
