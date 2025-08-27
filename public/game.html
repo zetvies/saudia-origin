@@ -160,7 +160,7 @@
       </div>
 
       <div
-        class="p-[1svh] w-[50svh] bg-white/80 border border-saudia-green/20 rounded-lg mt-4"
+        class="p-[1svh] w-[40svh] bg-white/80 border border-saudia-green/20 rounded-lg mt-4"
       >
         <div id="answersContainer" class="grid grid-cols-4 gap-1 justify-center">
           <!-- Draggable answers will be generated here -->
@@ -645,7 +645,7 @@
       function createDraggableAnswer(city, imageName, isCorrect, index) {
         const answerDiv = document.createElement("div");
         answerDiv.className =
-          "w-[10svh] h-[10svh] bg-white border-2 border-saudia-green/30 rounded-lg cursor-pointer flex items-center justify-center overflow-hidden";
+          "w-[8svh] h-[8svh] bg-white border-2 border-saudia-green/30 rounded-lg cursor-pointer flex items-center justify-center overflow-hidden";
         answerDiv.draggable = false;
         answerDiv.dataset.city = city;
         answerDiv.dataset.image = imageName;
