@@ -224,6 +224,7 @@
       let missingImages = []; // Array of 3 missing image names
       let usedCities = []; // Track used cities to ensure uniqueness
       let completedPiecesCount = 0; // Simple counter for completed pieces
+      let selectedAnswer = null; // Currently selected answer element
 
       // Available cities
       const cities = [
@@ -264,19 +265,8 @@
         return shuffled;
       }
 
-      // Drag and drop functions
-      let draggedElement = null;
-
-      function handleDragStart(e) {
-        draggedElement = e.target;
-        e.target.style.opacity = "0.5";
-        e.dataTransfer.effectAllowed = "move";
-      }
-
-      function handleDragEnd(e) {
-        e.target.style.opacity = "1";
-        draggedElement = null;
-      }
+      // Click-based interaction variables
+      let draggedElement = null; // Keep for compatibility with existing code
 
       // Event listeners
       startBtn.addEventListener("click", startGame);
@@ -328,6 +318,12 @@
         const completedPieces = document.querySelectorAll('.missing-piece[data-completed="true"]');
         completedPieces.forEach(piece => {
           delete piece.dataset.completed;
+        });
+        
+        // Clear any filled pieces
+        const filledPieces = document.querySelectorAll('.missing-piece[data-filled="true"]');
+        filledPieces.forEach(piece => {
+          delete piece.dataset.filled;
         });
         
         // Clear arrays and counter
@@ -394,12 +390,12 @@
         const gridContainer = document.querySelector(".grid");
         gridContainer.innerHTML = "";
 
-        // Randomly select 3 different positions for missing pieces (A1 to A16)
+        // Only place empty grids in rows 2-4 (positions 4-15, which are rows 2-4)
         missingPositions = [];
         missingImages = [];
         
         while (missingPositions.length < 3) {
-          const randomPosition = Math.floor(Math.random() * 16);
+          const randomPosition = Math.floor(Math.random() * 12) + 4; // Positions 4-15 (rows 2-4)
           if (!missingPositions.includes(randomPosition)) {
             missingPositions.push(randomPosition);
             const imageNumber = randomPosition + 1; // A1, A2, A3, ..., A16
@@ -409,7 +405,7 @@
         }
 
         console.log("=== GRID GENERATION DEBUG ===");
-        console.log("Missing positions selected:", missingPositions);
+        console.log("Missing positions selected (rows 2-4):", missingPositions);
         console.log("Missing images selected:", missingImages);
         console.log("Arrays after population:", { missingPositions, missingImages });
 
@@ -426,7 +422,10 @@
             cell.classList.add("missing-piece");
             cell.dataset.missingIndex = i; // Store the actual grid position (0-15)
             cell.innerHTML =
-              '<span class="text-saudia-green/50 text-[1.5svh] pointer-events-none select-none">Drag and <br/>Drop here</span>';
+              '<span class="text-saudia-green/50 text-[1.5svh] pointer-events-none select-none">Click to place</span>';
+            
+            // Add click event for placing answers
+            cell.addEventListener("click", handleGridClick);
             
             console.log(`Created missing piece at position ${i} with dataset:`, cell.dataset);
           } else {
@@ -445,6 +444,118 @@
         console.log("=== GENERATE GRID END ===");
         console.log("Final missingPositions:", missingPositions);
         console.log("Final missingImages:", missingImages);
+      }
+
+      // Handle answer selection
+      function handleAnswerClick(e) {
+        const answerElement = e.currentTarget;
+        
+        // Clear previous selection
+        if (selectedAnswer) {
+          selectedAnswer.classList.remove("ring-4", "ring-saudia-green", "ring-opacity-50");
+        }
+        
+        // Select new answer
+        selectedAnswer = answerElement;
+        selectedAnswer.classList.add("ring-4", "ring-saudia-green", "ring-opacity-50");
+        
+        console.log("Answer selected:", selectedAnswer.dataset);
+      }
+
+      // Handle grid click to place answer
+      function handleGridClick(e) {
+        if (!selectedAnswer) {
+          console.log("No answer selected");
+          return;
+        }
+
+        const isCorrect = selectedAnswer.dataset.correct === "true";
+        const answerGridPosition = parseInt(selectedAnswer.dataset.index);
+        const targetGridPosition = parseInt(e.target.dataset.missingIndex);
+
+        console.log("=== GRID CLICK DEBUG ===");
+        console.log("Selected answer dataset:", selectedAnswer.dataset);
+        console.log("Target element dataset:", e.target.dataset);
+        console.log("Is correct answer:", isCorrect);
+        console.log("Answer grid position:", answerGridPosition);
+        console.log("Target grid position:", targetGridPosition);
+
+        // Place any answer (correct or wrong) in the grid
+        const selectedCity = selectedAnswer.dataset.city;
+        const selectedImage = selectedAnswer.dataset.image;
+
+        // Show the selected piece in the grid
+        e.target.innerHTML = `<img src="assets/cities/${selectedCity}/${selectedImage}" alt="City piece" class="w-full h-full object-cover">`;
+
+        // Remove the drop zone styling and make it look like a regular cell
+        e.target.classList.remove("bg-white");
+        e.target.classList.add("bg-gray-100");
+
+        // Mark this piece as filled (not necessarily completed correctly)
+        e.target.dataset.filled = "true";
+
+        // Disable the used answer element
+        selectedAnswer.style.cursor = "not-allowed";
+        selectedAnswer.style.opacity = "0.6";
+        selectedAnswer.classList.remove("ring-4", "ring-saudia-green", "ring-opacity-50", "cursor-pointer");
+        selectedAnswer.classList.add("cursor-not-allowed");
+        selectedAnswer.removeEventListener("click", handleAnswerClick);
+
+        // Clear selection
+        selectedAnswer = null;
+
+        // Check if this was a correct placement
+        if (isCorrect && answerGridPosition === targetGridPosition) {
+          // Correct answer for this specific missing piece
+          console.log("✅ CORRECT MATCH! Filling position:", targetGridPosition);
+          score++;
+          scoreSpan.textContent = score;
+          
+          // Mark this piece as correctly completed
+          e.target.dataset.completed = "true";
+          
+          // Count completed pieces
+          completedPiecesCount++;
+          
+          console.log(`Completed pieces: ${completedPiecesCount}/${missingPositions.length}`);
+        } else {
+          // Wrong answer or wrong position
+          console.log("❌ WRONG PLACEMENT:", {
+            isCorrect,
+            answerGridPosition,
+            targetGridPosition,
+            message: isCorrect ? "Wrong position for correct answer" : "Wrong answer placed"
+          });
+        }
+
+        // Check if all missing pieces are filled (regardless of correctness)
+        const filledPieces = document.querySelectorAll('.missing-piece[data-filled="true"]');
+        if (filledPieces.length === missingPositions.length) {
+          console.log("🎉 All pieces filled! Moving to next level");
+          
+          // All pieces filled - disable all answers and go to next level
+          const answers = document.querySelectorAll(
+            "#answersContainer > div"
+          );
+          answers.forEach((answer) => {
+            answer.style.cursor = "not-allowed";
+            answer.style.opacity = "0.6";
+          });
+
+          // Wait 1 second then go to next level
+          setTimeout(() => {
+            currentLevel++;
+            clearInterval(gameTimerInterval);
+            if (currentLevel > 6) {
+              endGame();
+            } else {
+              currentLevelSpan.textContent = currentLevel;
+              clearGameState(); // Clear state before next level
+              initGame();
+              startGameTimer();
+            }
+          }, 1000);
+        }
       }
 
       // Generate 8 answer options (3 correct + 5 wrong)
@@ -534,8 +645,8 @@
       function createDraggableAnswer(city, imageName, isCorrect, index) {
         const answerDiv = document.createElement("div");
         answerDiv.className =
-          "w-[10svh] h-[10svh] bg-white border-2 border-saudia-green/30 rounded-lg cursor-grab active:cursor-grabbing flex items-center justify-center overflow-hidden";
-        answerDiv.draggable = true;
+          "w-[10svh] h-[10svh] bg-white border-2 border-saudia-green/30 rounded-lg cursor-pointer flex items-center justify-center overflow-hidden";
+        answerDiv.draggable = false;
         answerDiv.dataset.city = city;
         answerDiv.dataset.image = imageName;
         answerDiv.dataset.correct = isCorrect;
@@ -543,152 +654,27 @@
 
         answerDiv.innerHTML = `<img src="assets/cities/${city}/${imageName}" alt="City" class="w-full h-full object-cover pointer-events-none">`;
 
-        // Add drag events
-        answerDiv.addEventListener("dragstart", handleDragStart);
-        answerDiv.addEventListener("dragend", handleDragEnd);
+        // Add click event for selection
+        answerDiv.addEventListener("click", handleAnswerClick);
 
         return answerDiv;
       }
 
-      // Add drop zone functionality to answer grid
+      // Add click functionality to missing pieces
       function setupDropZone() {
         const missingPieces = document.querySelectorAll(".missing-piece");
         missingPieces.forEach((piece) => {
-          piece.addEventListener("dragover", handleDragOver);
-          piece.addEventListener("drop", handleDrop);
+          // Add click event for placing answers
+          piece.addEventListener("click", handleGridClick);
         });
       }
 
-      function handleDragOver(e) {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = "move";
-        e.target.style.borderColor = "rgb(0, 100, 0, 0.6)";
-        e.target.style.backgroundColor = "rgb(0, 100, 0, 0.2)";
-      }
 
-      function handleDrop(e) {
-        e.preventDefault();
 
-        if (draggedElement) {
-          const isCorrect = draggedElement.dataset.correct === "true";
-          const answerGridPosition = parseInt(draggedElement.dataset.index);
 
-          console.log("=== DROP EVENT DEBUG ===");
-          console.log("Dragged element dataset:", draggedElement.dataset);
-          console.log("Target element dataset:", e.target.dataset);
-          console.log("Is correct answer:", isCorrect);
-          console.log("Answer grid position:", answerGridPosition);
-          console.log("Answer grid position type:", typeof answerGridPosition);
 
-          if (isCorrect) {
-            // Check if this is the correct missing piece for this position
-            const targetGridPosition = parseInt(e.target.dataset.missingIndex);
-            
-            console.log("=== MATCHING DEBUG ===");
-            console.log("Target grid position:", targetGridPosition);
-            console.log("Target grid position type:", typeof targetGridPosition);
-            console.log("Missing positions array:", missingPositions);
-            console.log("Missing images array:", missingImages);
-            console.log("Comparison result:", answerGridPosition === targetGridPosition);
-            console.log("Answer position in missing positions:", missingPositions.includes(answerGridPosition));
-            
-            if (answerGridPosition === targetGridPosition) {
-              // Correct answer for this specific missing piece
-              console.log("✅ CORRECT MATCH! Filling position:", targetGridPosition);
-              score++;
-              scoreSpan.textContent = score;
 
-              // Show the correct piece immediately to complete the image
-              const correctCity = draggedElement.dataset.city;
-              const correctImage = draggedElement.dataset.image;
 
-              // Preserve the cell structure and only update the content
-              e.target.innerHTML = `<img src="assets/cities/${correctCity}/${correctImage}" alt="City piece" class="w-full h-full object-cover">`;
-
-              // Remove the drop zone styling and make it look like a regular cell
-              e.target.classList.remove("bg-white");
-              e.target.classList.add("bg-gray-100");
-
-              // Mark this piece as completed instead of removing from arrays
-              e.target.dataset.completed = "true";
-
-              // Disable the used answer element
-              draggedElement.draggable = false;
-              draggedElement.style.cursor = "not-allowed";
-              draggedElement.style.opacity = "0.6";
-              draggedElement.classList.remove("cursor-grab", "active:cursor-grabbing");
-              draggedElement.classList.add("cursor-not-allowed");
-
-              // Count completed pieces
-              completedPiecesCount++;
-              
-              console.log(`Completed pieces: ${completedPiecesCount}/${missingPositions.length}`);
-
-              // Check if all missing pieces are filled
-              if (completedPiecesCount === missingPositions.length) {
-                console.log("🎉 All pieces filled! Moving to next level");
-                // All pieces filled - disable all answers and go to next level
-                const answers = document.querySelectorAll(
-                  "#answersContainer > div"
-                );
-                answers.forEach((answer) => {
-                  answer.draggable = false;
-                  answer.style.cursor = "not-allowed";
-                  answer.style.opacity = "0.6";
-                });
-
-                // Wait 1 second then go to next level
-                setTimeout(() => {
-                  currentLevel++;
-                  clearInterval(gameTimerInterval);
-                  if (currentLevel > 6) {
-                    endGame();
-                  } else {
-                    currentLevelSpan.textContent = currentLevel;
-                    clearGameState(); // Clear state before next level
-                    initGame();
-                    startGameTimer();
-                  }
-                }, 1000);
-              }
-            } else {
-              // Wrong missing piece for this position
-              console.log("❌ WRONG PIECE for this position:", {
-                answerGridPosition,
-                targetGridPosition,
-                difference: answerGridPosition - targetGridPosition
-              });
-              e.target.style.borderColor = "rgb(220, 38, 38, 0.8)";
-              e.target.style.backgroundColor = "rgb(220, 38, 38, 0.2)";
-              e.target.innerHTML =
-                '<span class="text-red-600 text-lg font-bold">❌ Wrong piece!</span>';
-
-              // Reset after 1 second
-              setTimeout(() => {
-                e.target.style.borderColor = "rgb(0, 100, 0, 0.3)";
-                e.target.style.backgroundColor = "rgb(0, 100, 0, 0.05)";
-                e.target.innerHTML =
-                  '<span class="text-saudia-green/50 text-[1.5svh] pointer-events-none select-none">Drag and <br/>Drop here</span>';
-              }, 1000);
-            }
-          } else {
-            // Wrong answer
-            console.log("❌ WRONG ANSWER dropped");
-            e.target.style.borderColor = "rgb(220, 38, 38, 0.8)";
-            e.target.style.backgroundColor = "rgb(220, 38, 38, 0.2)";
-            e.target.innerHTML =
-              '<span class="text-red-600 text-lg font-bold">❌ Wrong!</span>';
-
-            // Reset after 1 second
-            setTimeout(() => {
-              e.target.style.borderColor = "rgb(0, 100, 0, 0.3)";
-              e.target.style.backgroundColor = "rgb(0, 100, 0, 0.05)";
-              e.target.innerHTML =
-                '<span class="text-saudia-green/50 text-[1.5svh] pointer-events-none select-none">Drag and <br/>Drop here</span>';
-            }, 1000);
-          }
-        }
-      }
 
       // Restart game
       function restartGame() {
