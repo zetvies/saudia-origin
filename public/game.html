@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Saudia Quiz Game</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./config.js"></script>
     <style>
       @font-face {
         font-family: 'SaudiaSans';
@@ -213,6 +215,12 @@ style="
     </div>
 </div>
     <script>
+      // Initialize Supabase client
+      const supabaseClient = supabase.createClient(
+        config.supabaseUrl,
+        config.supabaseKey
+      );
+
       // WebSocket connection
       const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const ws = new WebSocket(`${wsProtocol}//${window.location.host}`);
@@ -761,6 +769,39 @@ style="
         endGame();
       }
 
+      // Function to submit game data to Supabase
+      async function submitGameDataToSupabase(score, remainingTime) {
+        try {
+          if (!formData) {
+            console.error("No form data available for Supabase submission");
+            return;
+          }
+
+          const gameData = {
+            name: formData.nama || "Unknown",
+            email: formData.email || "Unknown",
+            whatsapp: formData.whatsapp || "Unknown",
+            gender: formData.gender || "Unknown",
+            "time-remaining": remainingTime.toString(),
+            score: score.toString()
+          };
+
+          console.log("Submitting to Supabase:", gameData);
+
+          const { data, error } = await supabaseClient
+            .from("saudia")
+            .insert([gameData]);
+
+          if (error) {
+            console.error("Error submitting to Supabase:", error);
+          } else {
+            console.log("Successfully submitted to Supabase:", data);
+          }
+        } catch (error) {
+          console.error("Error in submitGameDataToSupabase:", error);
+        }
+      }
+
       function endGame() {
         gameState = "gameOver";
         gameScreen.classList.add("hidden");
@@ -789,6 +830,9 @@ style="
         // Set isPlaying to false
         isPlaying = false;
         console.log("isPlaying set to:", isPlaying);
+
+        // Submit game data to Supabase
+        submitGameDataToSupabase(score, remainingTime);
 
         // Send WebSocket signal to form.html
         if (ws && ws.readyState === WebSocket.OPEN) {
