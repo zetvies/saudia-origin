@@ -73,14 +73,15 @@
     </script>
   </head>
   <body
-    class="min-h-screen flex flex-col items-center justify-center text-saudia-green relative overflow-hidden p-5"
-    style="
-      background-image: url('./assets/bg.png');
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-    "
+    class="w-screen h-screen flex justify-center items-center"
   >
+  <div id="container" class="h-[100svh] w-[100svh] relative flex flex-col items-center justify-center text-saudia-green relative overflow-hidden p-5"
+  style="
+    background-image: url('./assets/bg.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  ">
   <img src="./assets/decoration.png" class="h-[20svh] absolute top-0 left-0 "/>
   <img src="./assets/decoration.png" class="h-[20svh] absolute bottom-0 right-0 rotate-180" />
     <img src="./assets/logo.svg" class="h-[12svh]" />
@@ -123,6 +124,7 @@
         </div>
       </div>
     </div>
+  </div>
 
     <script>
       // WebSocket connection for form submission detection - automatically detect protocol
@@ -184,6 +186,16 @@
         }, 3000);
       }
 
+      // Function to scale container by window dimensions
+      function scaleContainer() {
+        const container = document.getElementById('container');
+        const scaleX = window.innerWidth / window.innerHeight;
+        
+        // Apply the scale transform
+        container.style.transform = `scaleX(${scaleX})`;
+        container.style.transformOrigin = 'center center';
+      }
+
       // Generate QR Code
       document.addEventListener("DOMContentLoaded", function () {
         const qrCodeElement = document.getElementById("qrcode");
@@ -198,7 +210,13 @@
           colorLight: "#FFFFFF",
           correctLevel: QRCode.CorrectLevel.H,
         });
+
+        // Scale container on initial load
+        scaleContainer();
       });
+
+      // Scale container on window resize
+      window.addEventListener('resize', scaleContainer);
     </script>
   </body>
 </html>
