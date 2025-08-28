@@ -34,32 +34,43 @@ app.get('/game2', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'game2.html'));
 });
 
-// Handle form submission
-app.post('/submit-form', (req, res) => {
-    const { nama, email, whatsapp } = req.body;
+// WebSocket connection handling
+wss.on('connection', (ws) => {
+    console.log('New WebSocket connection established. Total clients:', wss.clients.size);
     
-    // Log form data
-    console.log('Form submitted:', { nama, email, whatsapp });
-    
-    // Send WebSocket signal to all connected clients
-    wss.clients.forEach((client) => {
-        if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-                type: 'form-submitted',
-                data: { nama, email, whatsapp }
-            }));
+    ws.on('message', (message) => {
+        try {
+            const data = JSON.parse(message);
+            console.log('WebSocket message received:', data);
+            console.log('Message type:', data.type);
+            
+            if (data.type === 'form-submitted') {
+                console.log('Form submitted via WebSocket:', data.data);
+                console.log('Broadcasting to', wss.clients.size, 'connected clients');
+                
+                // Broadcast form-submitted message to all connected clients
+                let broadcastCount = 0;
+                wss.clients.forEach((client) => {
+                    if (client.readyState === WebSocket.OPEN) {
+                        const messageToSend = JSON.stringify({
+                            type: 'form-submitted',
+                            data: data.data
+                        });
+                        client.send(messageToSend);
+                        broadcastCount++;
+                        console.log(`Sent message to client ${broadcastCount}`);
+                    }
+                });
+                console.log(`Broadcasted to ${broadcastCount} clients`);
+            }
+        } catch (error) {
+            console.error('Error parsing WebSocket message:', error);
+            console.error('Raw message:', message.toString());
         }
     });
     
-    res.json({ success: true, message: 'Form submitted successfully' });
-});
-
-// WebSocket connection handling
-wss.on('connection', (ws) => {
-    console.log('New WebSocket connection established');
-    
     ws.on('close', () => {
-        console.log('WebSocket connection closed');
+        console.log('WebSocket connection closed. Remaining clients:', wss.clients.size);
     });
 });
 

@@ -133,10 +133,15 @@
 
       ws.onopen = function () {
         console.log("WebSocket connected to index page");
+        console.log("WebSocket readyState:", ws.readyState);
       };
 
       ws.onmessage = function (event) {
+        console.log("WebSocket message received in index.html:", event.data);
         const message = JSON.parse(event.data);
+        console.log("Parsed message:", message);
+        console.log("Message type:", message.type);
+        
         if (message.type === "form-submitted") {
           console.log(
             "Form submitted detected, redirecting to game:",
@@ -148,8 +153,11 @@
 
           // Redirect to game after 1 second
           setTimeout(() => {
+            console.log("Redirecting to game.html now...");
             window.location.href = "/game.html";
           }, 1000);
+        } else {
+          console.log("Unknown message type:", message.type);
         }
       };
 

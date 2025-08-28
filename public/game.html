@@ -228,6 +228,17 @@ style="
       ws.onclose = function() {
         console.log("WebSocket disconnected from game page");
       };
+      
+      ws.onmessage = function(event) {
+        const message = JSON.parse(event.data);
+        if (message.type === 'form-submitted') {
+          console.log('Form submitted detected, starting game:', message.data);
+          formData = message.data; // Store form data
+          isPlaying = true; // Set playing state
+          console.log('Form data stored:', formData);
+          console.log('isPlaying set to:', isPlaying);
+        }
+      };
 
       // Game state
       let gameState = "start"; // start, countdown, playing, gameOver
@@ -244,6 +255,8 @@ style="
       let usedCities = []; // Track used cities to ensure uniqueness
       let completedPiecesCount = 0; // Simple counter for completed pieces
       let selectedAnswer = null; // Currently selected answer element
+      let formData = null; // Store form data received from WebSocket
+      let isPlaying = false; // Track if user is playing
 
       // Available cities
       const cities = [
@@ -759,6 +772,24 @@ style="
         finalScore.textContent = score;
         gameDuration.textContent = remainingTime;
 
+        // Console log form details, score, and remaining time
+        console.log("=== GAME FINISHED ===");
+        console.log("Form Details:", {
+          nama: formData?.nama || "Not available",
+          email: formData?.email || "Not available", 
+          whatsapp: formData?.whatsapp || "Not available",
+          gender: formData?.gender || "Not available"
+        });
+        console.log("Final Score:", score);
+        console.log("Remaining Time:", remainingTime, "seconds");
+        console.log("Total Time Used:", totalTimeUsed, "seconds");
+        console.log("Level Reached:", currentLevel);
+        console.log("=====================");
+
+        // Set isPlaying to false
+        isPlaying = false;
+        console.log("isPlaying set to:", isPlaying);
+
         // Send WebSocket signal to form.html
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({
@@ -789,6 +820,13 @@ style="
       // Start game when page loads
       document.addEventListener("DOMContentLoaded", () => {
         // Game will start when start button is clicked
+        
+        // Load form data from localStorage if available
+        const savedFormData = localStorage.getItem('formData');
+        if (savedFormData) {
+          formData = JSON.parse(savedFormData);
+          console.log('Form data loaded from localStorage in game page:', formData);
+        }
         
         // Scale container on initial load
         scaleContainer();

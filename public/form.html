@@ -160,8 +160,20 @@
         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const ws = new WebSocket(`${wsProtocol}//${window.location.host}`);
         
+        // State management
+        let formData = null;
+        let isPlaying = false;
+        
+        // Load form data from localStorage if available
+        const savedFormData = localStorage.getItem('formData');
+        if (savedFormData) {
+            formData = JSON.parse(savedFormData);
+            console.log('Form data loaded from localStorage:', formData);
+        }
+        
         ws.onopen = function() {
-            console.log('WebSocket connected');
+            console.log('WebSocket connected from form page');
+            console.log('WebSocket readyState:', ws.readyState);
         };
         
         ws.onmessage = function(event) {
@@ -186,35 +198,37 @@
             e.preventDefault();
             
             // Get form data
-            const formData = new FormData(this);
-            const data = Object.fromEntries(formData);
+            const formDataObj = new FormData(this);
+            formData = Object.fromEntries(formDataObj);
             
-            // Submit form via AJAX
-            fetch('/submit-form', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-                         .then(result => {
-                 if (result.success) {
-                     // Hide the form
-                     const form = document.getElementById('contactForm');
-                     form.classList.add('hidden');
-                     
-                     // Show success message
-                     const successMessage = document.getElementById('successMessage');
-                     successMessage.classList.remove('hidden');
-                     
-                     // Form submitted successfully - no redirect needed
-                 }
-             })
-            .catch(error => {
-                console.error('Error submitting form:', error);
-                alert('Error submitting form. Please try again.');
-            });
+            // Set isPlaying to true
+            isPlaying = true;
+            
+            // Save form data to localStorage for persistence
+            localStorage.setItem('formData', JSON.stringify(formData));
+            console.log('Form data saved to localStorage:', formData);
+            
+            // Send form data via WebSocket
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                const messageToSend = JSON.stringify({
+                    type: 'form-submitted',
+                    data: formData
+                });
+                console.log('Sending WebSocket message:', messageToSend);
+                ws.send(messageToSend);
+                console.log('Form data sent via WebSocket:', formData);
+                console.log('isPlaying set to:', isPlaying);
+            } else {
+                console.error('WebSocket not ready. State:', ws.readyState);
+            }
+            
+            // Hide the form
+            const form = document.getElementById('contactForm');
+            form.classList.add('hidden');
+            
+            // Show success message
+            const successMessage = document.getElementById('successMessage');
+            successMessage.classList.remove('hidden');
         });
         
         // Function to show game over screen
