@@ -72,14 +72,15 @@
     </script>
   </head>
   <body
-    class="min-h-screen flex flex-col items-center py-[4svh] text-saudia-green relative overflow-hidden p-5"
-    style="
-      background-image: url('./assets/bg.png');
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-    "
-  >
+  class="w-screen h-screen flex justify-center items-center"
+>
+<div id="container" class="h-[100svh] w-[100svh] relative flex flex-col items-center justify-center text-saudia-green relative overflow-hidden p-5"
+style="
+  background-image: url('./assets/bg.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+">
     <img
       src="./assets/decoration.png"
       class="h-[20svh] absolute top-0 left-0"
@@ -192,7 +193,7 @@
         </p>
       </div>
     </div>
-
+</div>
     <script>
       // WebSocket connection
       const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -770,7 +771,23 @@
       // Start game when page loads
       document.addEventListener("DOMContentLoaded", () => {
         // Game will start when start button is clicked
+        
+        // Scale container on initial load
+        scaleContainer();
       });
+
+      // Function to scale container by window dimensions
+      function scaleContainer() {
+        const container = document.getElementById('container');
+        const scaleX = window.innerWidth / window.innerHeight;
+        
+        // Apply the scale transform
+        container.style.transform = `scaleX(${scaleX})`;
+        container.style.transformOrigin = 'center center';
+      }
+
+      // Scale container on window resize
+      window.addEventListener('resize', scaleContainer);
     </script>
   </body>
 </html>
