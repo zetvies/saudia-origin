@@ -796,6 +796,9 @@ style="
             console.error("Error submitting to Supabase:", error);
           } else {
             console.log("Successfully submitted to Supabase:", data);
+            // Reset playing state in localStorage after successful submission
+            localStorage.removeItem('formData');
+            console.log("Form data removed from localStorage after Supabase submission");
           }
         } catch (error) {
           console.error("Error in submitGameDataToSupabase:", error);
@@ -841,7 +844,8 @@ style="
             data: {
               score: score,
               remainingTime: remainingTime,
-              level: currentLevel
+              level: currentLevel,
+              isPlaying: false
             }
           }));
         }

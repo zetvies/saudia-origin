@@ -136,6 +136,8 @@
         <div class="text-[2.4svh] hidden px-[3svh]" id="successMessage" >
           Form berhasil disubmit!<br/> Silakan lanjut ke game di layar.
         </div>
+        
+
 
         <div id="gameOverScreen" class="hidden flex flex-col bg-white rounded-lg p-[4svh] border border-saudia-green/20">
             <h2 class="text-[3svh] font-bold text-saudia-green mb-6">
@@ -168,7 +170,9 @@
         const savedFormData = localStorage.getItem('formData');
         if (savedFormData) {
             formData = JSON.parse(savedFormData);
+            isPlaying = true; // If form data exists, user is considered playing
             console.log('Form data loaded from localStorage:', formData);
+            console.log('isPlaying set to true from localStorage');
         }
         
         ws.onopen = function() {
@@ -182,6 +186,9 @@
                 console.log('Form submitted via WebSocket:', message.data);
             } else if (message.type === 'game-over') {
                 console.log('Game over detected via WebSocket:', message.data);
+                // Reset playing state immediately when game over is received
+                isPlaying = false;
+                console.log('isPlaying reset to false from game-over message');
                 showGameOverScreen(message.data);
             }
         };
@@ -196,6 +203,12 @@
         
         document.getElementById('contactForm').addEventListener('submit', function(e) {
             e.preventDefault();
+            
+            // Check if user is already playing
+            if (isPlaying) {
+                console.log('Form submission blocked: User is already playing');
+                return;
+            }
             
             // Get form data
             const formDataObj = new FormData(this);
@@ -222,22 +235,71 @@
                 console.error('WebSocket not ready. State:', ws.readyState);
             }
             
-            // Hide the form
-            const form = document.getElementById('contactForm');
-            form.classList.add('hidden');
+            // Update form UI to disabled state first
+            updateFormUI();
             
             // Show success message
             const successMessage = document.getElementById('successMessage');
             successMessage.classList.remove('hidden');
+            
+            // Keep form visible but disabled to show submission state
+            // Form will be hidden when game over message is received
         });
+        
+        // Function to update form UI based on playing state
+        function updateFormUI() {
+            const form = document.getElementById('contactForm');
+            const submitButton = form.querySelector('button[type="submit"]');
+            const inputs = form.querySelectorAll('input');
+            
+            if (isPlaying) {
+                // Disable form when playing
+                submitButton.disabled = true;
+                submitButton.textContent = 'Sedang Bermain...';
+                submitButton.classList.add('opacity-50', 'cursor-not-allowed');
+                
+                inputs.forEach(input => {
+                    input.disabled = true;
+                    input.classList.add('opacity-50', 'cursor-not-allowed');
+                });
+                
+                console.log('Form disabled: User is playing');
+            } else {
+                // Enable form when not playing
+                submitButton.disabled = false;
+                submitButton.textContent = 'Submit';
+                submitButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                
+                inputs.forEach(input => {
+                    input.disabled = false;
+                    input.classList.remove('opacity-50', 'cursor-not-allowed');
+                });
+                
+                console.log('Form enabled: User can submit');
+            }
+        }
         
         // Function to show game over screen
         function showGameOverScreen(gameData) {
-            // Hide the form and success message
+            // Reset playing state
+            isPlaying = false;
+            console.log('Game over: isPlaying reset to false');
+            
+            // Clear localStorage since game is over
+            localStorage.removeItem('formData');
+            formData = null;
+            
+            // Update form UI to enabled state
+            updateFormUI();
+            
+            // Show the form again (now enabled) and hide success message
             const form = document.getElementById('contactForm');
             const successMessage = document.getElementById('successMessage');
-            form.classList.add('hidden');
+            form.classList.remove('hidden');
             successMessage.classList.add('hidden');
+            
+            // Reset form fields
+            form.reset();
             
             // Update game over screen with actual data
             document.getElementById('finalScore').textContent = gameData.score;
@@ -261,6 +323,23 @@
                     window.location.href = '/';
                 }
             }, 1000);
+        }
+        
+
+        
+        // Initialize form UI on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is already playing from localStorage
+            if (formData && isPlaying) {
+                console.log('User already playing, disabling form');
+                updateFormUI();
+            }
+        });
+        
+        // Also call updateFormUI immediately if needed
+        if (formData && isPlaying) {
+            console.log('Immediate updateFormUI call');
+            updateFormUI();
         }
     </script>
 </body>
