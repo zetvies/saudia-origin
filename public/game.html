@@ -1045,10 +1045,10 @@ style="
       }
 
       // Start game when page loads
-      document.addEventListener("DOMContentLoaded", () => {
+      document.addEventListener("DOMContentLoaded", async () => {
         // Game will start when start button is clicked
         
-        // Load form data from localStorage if available (Chromium-optimized)
+        // Try to load form data from localStorage first as fallback
         let savedFormData = localStorage.getItem('formData');
         console.log('Checking localStorage for form data:', savedFormData);
         
@@ -1058,15 +1058,49 @@ style="
           console.log('Checking sessionStorage for form data:', savedFormData);
         }
         
+        // If we have form data in storage, try to fetch the latest from server
         if (savedFormData) {
           try {
-            formData = JSON.parse(savedFormData);
-            console.log('Form data loaded from storage in game page:', formData);
-            isPlaying = true; // Set playing state if form data exists
+            const parsedData = JSON.parse(savedFormData);
+            if (parsedData && parsedData.email) {
+              console.log('Attempting to fetch latest form data from server for email:', parsedData.email);
+              
+              // Fetch the latest data from Supabase
+              const { data: serverData, error } = await supabaseClient
+                .from('saudia')
+                .select('*')
+                .eq('email', parsedData.email)
+                .single();
+              
+              if (error) {
+                console.warn('Failed to fetch from server, using local data:', error);
+                formData = parsedData;
+              } else if (serverData) {
+                console.log('✅ Latest data retrieved from server:', serverData);
+                // Update local storage with server data
+                const updatedFormData = {
+                  nama: serverData.name || parsedData.nama,
+                  email: serverData.email,
+                  whatsapp: serverData.whatsapp || parsedData.whatsapp,
+                  gender: serverData.gender || parsedData.gender
+                };
+                formData = updatedFormData;
+                
+                // Update localStorage with server data
+                localStorage.setItem('formData', JSON.stringify(updatedFormData));
+                console.log('Local storage updated with server data');
+              } else {
+                console.log('No server data found, using local data');
+                formData = parsedData;
+              }
+            } else {
+              formData = parsedData;
+            }
             
-            // Chromium-specific: verify the loaded data is valid
+            // Verify the loaded data is valid
             if (formData && typeof formData === 'object' && formData.nama) {
               console.log('✅ Form data validation successful');
+              isPlaying = true; // Set playing state if form data exists
               
               // Update welcome message with user's name
               const welcomeTitle = document.getElementById('welcomeTitle');
@@ -1082,9 +1116,11 @@ style="
               isPlaying = false;
             }
           } catch (error) {
-            console.error('Error parsing form data from storage:', error);
+            console.error('Error processing form data:', error);
             localStorage.removeItem('formData'); // Clear corrupted data
             sessionStorage.removeItem('formData');
+            formData = null;
+            isPlaying = false;
           }
         } else {
           console.log('No form data found in any storage');
@@ -1092,8 +1128,6 @@ style="
         
         // Update start button state based on form data availability
         updateStartButtonState();
-        
-
         
         // Scale container on initial load
         scaleContainer();
