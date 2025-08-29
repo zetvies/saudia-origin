@@ -152,8 +152,7 @@
                 Waktu Tersisa: <span id="gameDuration" class="font-bold">0</span> detik
               </div>
               <p class="text-[2svh] text-saudia-green/70">
-                Kembali ke halaman utama dalam
-                <span id="redirectTimer">5</span> detik...
+                Game selesai! Anda dapat mengisi form lagi untuk bermain ulang.
               </p>
         </div>
 
@@ -167,15 +166,6 @@
         // State management
         let formData = null;
         let isPlaying = false;
-        
-        // Load form data from localStorage if available
-        const savedFormData = localStorage.getItem('formData');
-        if (savedFormData) {
-            formData = JSON.parse(savedFormData);
-            isPlaying = true; // If form data exists, user is considered playing
-            console.log('Form data loaded from localStorage:', formData);
-            console.log('isPlaying set to true from localStorage');
-        }
         
         ws.onopen = function() {
             console.log('WebSocket connected from form page');
@@ -220,19 +210,19 @@
                 // Initialize Supabase client
                 const supabaseClient = supabase.createClient(config.supabaseUrl, config.supabaseKey);
                 
-                // Submit form data to Supabase (using existing table structure)
-                const { data, error } = await supabaseClient
-                    .from('saudia')
-                    .insert([
-                        {
-                            name: formData.nama,
-                            email: formData.email,
-                            whatsapp: formData.whatsapp,
-                            gender: formData.gender,
-                            "time-remaining": "120",
-                            score: "0"
-                        }
-                    ]);
+                                 // Submit form data to Supabase (using existing table structure)
+                 const { data, error } = await supabaseClient
+                     .from('saudia')
+                     .insert([
+                         {
+                             name: formData.nama,
+                             email: formData.email,
+                             whatsapp: formData.whatsapp,
+                             gender: formData.gender,
+                             "time-remaining": "120",
+                             score: "0"
+                         }
+                     ]);
                 
                 if (error) {
                     console.error('Error submitting to Supabase:', error);
@@ -245,9 +235,8 @@
                 // Set isPlaying to true
                 isPlaying = true;
                 
-                // Save form data to localStorage for persistence
-                localStorage.setItem('formData', JSON.stringify(formData));
-                console.log('Form data saved to localStorage:', formData);
+                // Form data stored in memory for current session
+                console.log('Form data stored in memory:', formData);
                 
                 // Send form data via WebSocket
                 if (ws && ws.readyState === WebSocket.OPEN) {
@@ -317,9 +306,8 @@
             isPlaying = false;
             console.log('Game over: isPlaying reset to false');
             
-            // Clear localStorage since game is over
-            localStorage.removeItem('formData');
-            formData = null;
+                         // Clear form data since game is over
+             formData = null;
             
             // Update form UI to enabled state
             updateFormUI();
@@ -341,38 +329,16 @@
             const gameOverScreen = document.getElementById('gameOverScreen');
             gameOverScreen.classList.remove('hidden');
             
-            // Start redirect countdown
-            let redirectCountdown = 5;
-            const redirectTimer = document.getElementById('redirectTimer');
-            redirectTimer.textContent = redirectCountdown;
-            
-            const redirectInterval = setInterval(() => {
-                redirectCountdown--;
-                redirectTimer.textContent = redirectCountdown;
-                
-                if (redirectCountdown <= 0) {
-                    clearInterval(redirectInterval);
-                    window.location.href = '/';
-                }
-            }, 1000);
+            // No automatic redirect - user stays on the form page
         }
         
 
         
         // Initialize form UI on page load
         document.addEventListener('DOMContentLoaded', function() {
-            // Check if user is already playing from localStorage
-            if (formData && isPlaying) {
-                console.log('User already playing, disabling form');
-                updateFormUI();
-            }
+            // Form starts in enabled state since no localStorage data
+            console.log('Form initialized in enabled state');
         });
-        
-        // Also call updateFormUI immediately if needed
-        if (formData && isPlaying) {
-            console.log('Immediate updateFormUI call');
-            updateFormUI();
-        }
     </script>
 </body>
 </html>

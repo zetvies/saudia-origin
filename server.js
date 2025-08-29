@@ -9,6 +9,10 @@ const wss = new WebSocket.Server({ server });
 
 const PORT = process.env.PORT || 3000;
 
+// Server-side state management
+let currentFormData = null;
+let isCurrentlyPlaying = false;
+
 // Serve static files from the public directory
 app.use(express.static('public'));
 
@@ -34,9 +38,32 @@ app.get('/game2', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'game2.html'));
 });
 
+// API endpoint to check current server state
+app.get('/api/state', (req, res) => {
+    res.json({
+        formData: currentFormData,
+        isPlaying: isCurrentlyPlaying,
+        connectedClients: wss.clients.size,
+        timestamp: new Date().toISOString()
+    });
+});
+
 // WebSocket connection handling
 wss.on('connection', (ws) => {
     console.log('New WebSocket connection established. Total clients:', wss.clients.size);
+    
+    // Send current server state to newly connected client
+    if (currentFormData && isCurrentlyPlaying) {
+        const stateMessage = JSON.stringify({
+            type: 'current-state',
+            data: {
+                formData: currentFormData,
+                isPlaying: isCurrentlyPlaying
+            }
+        });
+        ws.send(stateMessage);
+        console.log('Sent current state to new client');
+    }
     
     ws.on('message', (message) => {
         try {
@@ -46,7 +73,14 @@ wss.on('connection', (ws) => {
             
             if (data.type === 'form-submitted') {
                 console.log('Form submitted via WebSocket:', data.data);
-                console.log('Broadcasting to', wss.clients.size, 'connected clients');
+                
+                // Store form data and set playing state on server
+                currentFormData = data.data;
+                isCurrentlyPlaying = true;
+                console.log('Server state updated:', { 
+                    formData: currentFormData, 
+                    isPlaying: isCurrentlyPlaying 
+                });
                 
                 // Broadcast form-submitted message to all connected clients
                 let broadcastCount = 0;
@@ -62,6 +96,31 @@ wss.on('connection', (ws) => {
                     }
                 });
                 console.log(`Broadcasted to ${broadcastCount} clients`);
+            } else if (data.type === 'game-over') {
+                console.log('Game over via WebSocket:', data.data);
+                
+                // Reset server state when game is over
+                currentFormData = null;
+                isCurrentlyPlaying = false;
+                console.log('Server state reset:', { 
+                    formData: currentFormData, 
+                    isPlaying: isCurrentlyPlaying 
+                });
+                
+                // Broadcast game-over message to all connected clients
+                let broadcastCount = 0;
+                wss.clients.forEach((client) => {
+                    if (client.readyState === WebSocket.OPEN) {
+                        const messageToSend = JSON.stringify({
+                            type: 'game-over',
+                            data: data.data
+                        });
+                        client.send(messageToSend);
+                        broadcastCount++;
+                        console.log(`Sent game-over message to client ${broadcastCount}`);
+                    }
+                });
+                console.log(`Game-over broadcasted to ${broadcastCount} clients`);
             }
         } catch (error) {
             console.error('Error parsing WebSocket message:', error);
@@ -78,6 +137,8 @@ wss.on('connection', (ws) => {
 server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
     console.log(`Form page available at http://localhost:${PORT}/form`);
+    console.log(`Game page available at http://localhost:${PORT}/game`);
+    console.log(`API state endpoint: http://localhost:${PORT}/api/state`);
     console.log(`WebSocket server is running on ws://localhost:${PORT}`);
     console.log(`Press Ctrl+C to stop the server`);
 });
