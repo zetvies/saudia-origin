@@ -112,7 +112,7 @@ style="
       id="startScreen"
       class="text-center h-[70svh] flex flex-col justify-center items-center w-full relative z-20"
     >
-      <h1 class="text-4xl md:text-5xl font-bold mb-[2svh]">Saudia Quiz Game</h1>
+      <h1 class="text-4xl md:text-5xl font-bold mb-[2svh]" id="welcomeTitle">Saudia Quiz Game</h1>
       <p class="text-lg">
         Complete the city image by finding the missing piece!
       </p>
@@ -208,10 +208,10 @@ style="
           Waktu Tersisa:
           <span id="gameDuration" class="font-bold">0</span> detik
         </div>
-        <p class="text-[2svh] text-saudia-green/70">
-          Kembali ke halaman utama dalam
-          <span id="redirectTimer">5</span> detik...
-        </p>
+                <p class="text-[2svh] text-saudia-green/70">
+           Kembali ke halaman utama dalam
+           <span id="redirectTimer">10</span> detik...
+         </p>
       </div>
     </div>
 </div>
@@ -858,112 +858,108 @@ style="
         endGame();
       }
 
-      // Function to submit game data to Supabase (Chromium-optimized)
-      async function submitGameDataToSupabase(score, remainingTime) {
-        try {
-          console.log("=== SUPABASE SUBMISSION START ===");
-          console.log("Form data available:", !!formData);
-          console.log("Form data content:", formData);
-          
-          if (!formData) {
-            console.error("No form data available for Supabase submission");
-            console.log("Attempting to load from storage...");
-            
-            // Try to load from localStorage as fallback
-            let savedFormData = localStorage.getItem('formData');
-            if (!savedFormData) {
-              savedFormData = sessionStorage.getItem('formData');
-            }
-            
-            if (savedFormData) {
-              try {
-                formData = JSON.parse(savedFormData);
-                console.log("Form data loaded from storage as fallback:", formData);
-              } catch (parseError) {
-                console.error("Error parsing saved form data:", parseError);
-                return;
-              }
-            } else {
-              console.error("No form data found in any storage");
-              return;
-            }
-          }
+             // Function to submit game data to Supabase (Chromium-optimized)
+       async function submitGameDataToSupabase(score, remainingTime) {
+         try {
+           console.log("=== SUPABASE SUBMISSION START ===");
+           console.log("Form data available:", !!formData);
+           console.log("Form data content:", formData);
+           
+           if (!formData) {
+             console.error("No form data available for Supabase submission");
+             console.log("Attempting to load from storage...");
+             
+             // Try to load from localStorage as fallback
+             let savedFormData = localStorage.getItem('formData');
+             if (!savedFormData) {
+               savedFormData = sessionStorage.getItem('formData');
+             }
+             
+             if (savedFormData) {
+               try {
+                 formData = JSON.parse(savedFormData);
+                 console.log("Form data loaded from storage as fallback:", formData);
+               } catch (parseError) {
+                 console.error("Error parsing saved form data:", parseError);
+                 return;
+               }
+             } else {
+               console.error("No form data found in any storage");
+               return;
+             }
+           }
 
-          const gameData = {
-            name: formData.nama || "Unknown",
-            email: formData.email || "Unknown",
-            whatsapp: formData.whatsapp || "Unknown",
-            gender: formData.gender || "Unknown",
-            "time-remaining": remainingTime.toString(),
-            score: score.toString()
-          };
+           console.log("Updating Supabase record for email:", formData.email);
+           console.log("Supabase client available:", !!supabaseClient);
+           console.log("Supabase client details:", {
+             client: supabaseClient,
+             from: supabaseClient.from,
+             update: supabaseClient.update
+           });
 
-          console.log("Submitting to Supabase:", gameData);
-          console.log("Supabase client available:", !!supabaseClient);
-          console.log("Supabase client details:", {
-            client: supabaseClient,
-            from: supabaseClient.from,
-            insert: supabaseClient.insert
-          });
+           // Chromium-optimized: Add retry mechanism for network issues
+           let retryCount = 0;
+           const maxRetries = 3;
+           let success = false;
+           
+           while (retryCount < maxRetries && !success) {
+             try {
+               console.log(`Attempt ${retryCount + 1} of ${maxRetries} to update Supabase`);
+               
+               // Update the existing record by email instead of inserting new one
+               const { data, error } = await supabaseClient
+                 .from("saudia")
+                 .update({
+                   "time-remaining": remainingTime.toString(),
+                   score: score.toString()
+                 })
+                 .eq('email', formData.email);
 
-          // Chromium-optimized: Add retry mechanism for network issues
-          let retryCount = 0;
-          const maxRetries = 3;
-          let success = false;
-          
-          while (retryCount < maxRetries && !success) {
-            try {
-              console.log(`Attempt ${retryCount + 1} of ${maxRetries} to submit to Supabase`);
-              
-              const { data, error } = await supabaseClient
-                .from("saudia")
-                .insert([gameData]);
-
-              if (error) {
-                console.error(`Error submitting to Supabase (attempt ${retryCount + 1}):`, error);
-                console.error("Error details:", {
-                  message: error.message,
-                  details: error.details,
-                  hint: error.hint
-                });
-                
-                // Chromium-specific: Check if it's a network error that might be retryable
-                if (error.message && error.message.includes('fetch')) {
-                  console.log("Network error detected, will retry...");
-                  retryCount++;
-                  if (retryCount < maxRetries) {
-                    await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
-                    continue;
-                  }
-                }
-              } else {
-                console.log("Successfully submitted to Supabase:", data);
-                success = true;
-                
-                // Reset playing state in storage after successful submission
-                localStorage.removeItem('formData');
-                sessionStorage.removeItem('formData');
-                console.log("Form data removed from storage after Supabase submission");
-                break;
-              }
-            } catch (retryError) {
-              console.error(`Retry error (attempt ${retryCount + 1}):`, retryError);
-              retryCount++;
-              if (retryCount < maxRetries) {
-                await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-              }
-            }
-          }
-          
-          if (!success) {
-            console.error("Failed to submit to Supabase after all retry attempts");
-          }
-        } catch (error) {
-          console.error("Error in submitGameDataToSupabase:", error);
-          console.error("Error stack:", error.stack);
-        }
-        console.log("=== SUPABASE SUBMISSION END ===");
-      }
+               if (error) {
+                 console.error(`Error updating Supabase (attempt ${retryCount + 1}):`, error);
+                 console.error("Error details:", {
+                   message: error.message,
+                   details: error.details,
+                   hint: error.hint
+                 });
+                 
+                 // Chromium-specific: Check if it's a network error that might be retryable
+                 if (error.message && error.message.includes('fetch')) {
+                   console.log("Network error detected, will retry...");
+                   retryCount++;
+                   if (retryCount < maxRetries) {
+                     await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
+                     continue;
+                   }
+                 }
+               } else {
+                 console.log("Successfully updated Supabase record:", data);
+                 success = true;
+                 
+                 // Reset playing state in storage after successful submission
+                 localStorage.removeItem('formData');
+                 sessionStorage.removeItem('formData');
+                 console.log("Form data removed from storage after Supabase update");
+                 break;
+               }
+             } catch (retryError) {
+               console.error(`Retry error (attempt ${retryCount + 1}):`, retryError);
+               retryCount++;
+               if (retryCount < maxRetries) {
+                 await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+               }
+             }
+           }
+           
+           if (!success) {
+             console.error("Failed to update Supabase after all retry attempts");
+           }
+         } catch (error) {
+           console.error("Error in submitGameDataToSupabase:", error);
+           console.error("Error stack:", error.stack);
+         }
+         console.log("=== SUPABASE SUBMISSION END ===");
+       }
 
       function endGame() {
         console.log('=== ENDGAME FUNCTION CALLED ===');
@@ -1033,9 +1029,9 @@ style="
           }));
         }
 
-        // Redirect after 5 seconds
-        let redirectCountdown = 5;
-        redirectTimer.textContent = redirectCountdown;
+                 // Redirect after 10 seconds
+         let redirectCountdown = 10;
+         redirectTimer.textContent = redirectCountdown;
 
         redirectInterval = setInterval(() => {
           redirectCountdown--;
@@ -1071,6 +1067,13 @@ style="
             // Chromium-specific: verify the loaded data is valid
             if (formData && typeof formData === 'object' && formData.nama) {
               console.log('✅ Form data validation successful');
+              
+              // Update welcome message with user's name
+              const welcomeTitle = document.getElementById('welcomeTitle');
+              if (welcomeTitle && formData.nama) {
+                welcomeTitle.textContent = `Welcome, ${formData.nama}`;
+                console.log('Welcome message updated with user name:', formData.nama);
+              }
             } else {
               console.warn('⚠️ Form data validation failed, clearing invalid data');
               localStorage.removeItem('formData');

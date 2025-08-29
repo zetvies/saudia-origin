@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Book Flight - Saudia Travel Fair</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./config.js"></script>
     <style>
       @font-face {
         font-family: 'SaudiaSans';
@@ -134,7 +136,7 @@
         </form>
 
         <div class="text-[2.4svh] hidden px-[3svh]" id="successMessage" >
-          Form berhasil disubmit!<br/> Silakan lanjut ke game di layar.
+          Form berhasil disubmit!<br/> Anda akan dialihkan ke game dalam beberapa detik...
         </div>
         
 
@@ -201,7 +203,7 @@
             console.log('WebSocket disconnected');
         };
         
-        document.getElementById('contactForm').addEventListener('submit', function(e) {
+        document.getElementById('contactForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             // Check if user is already playing
@@ -214,36 +216,66 @@
             const formDataObj = new FormData(this);
             formData = Object.fromEntries(formDataObj);
             
-            // Set isPlaying to true
-            isPlaying = true;
-            
-            // Save form data to localStorage for persistence
-            localStorage.setItem('formData', JSON.stringify(formData));
-            console.log('Form data saved to localStorage:', formData);
-            
-            // Send form data via WebSocket
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                const messageToSend = JSON.stringify({
-                    type: 'form-submitted',
-                    data: formData
-                });
-                console.log('Sending WebSocket message:', messageToSend);
-                ws.send(messageToSend);
-                console.log('Form data sent via WebSocket:', formData);
-                console.log('isPlaying set to:', isPlaying);
-            } else {
-                console.error('WebSocket not ready. State:', ws.readyState);
+            try {
+                // Initialize Supabase client
+                const supabaseClient = supabase.createClient(config.supabaseUrl, config.supabaseKey);
+                
+                // Submit form data to Supabase (using existing table structure)
+                const { data, error } = await supabaseClient
+                    .from('saudia')
+                    .insert([
+                        {
+                            name: formData.nama,
+                            email: formData.email,
+                            whatsapp: formData.whatsapp,
+                            gender: formData.gender,
+                            "time-remaining": "120",
+                            score: "0"
+                        }
+                    ]);
+                
+                if (error) {
+                    console.error('Error submitting to Supabase:', error);
+                    alert('Terjadi kesalahan saat mengirim data. Silakan coba lagi.');
+                    return;
+                }
+                
+                console.log('Data submitted to Supabase successfully:', data);
+                
+                // Set isPlaying to true
+                isPlaying = true;
+                
+                // Save form data to localStorage for persistence
+                localStorage.setItem('formData', JSON.stringify(formData));
+                console.log('Form data saved to localStorage:', formData);
+                
+                // Send form data via WebSocket
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    const messageToSend = JSON.stringify({
+                        type: 'form-submitted',
+                        data: formData
+                    });
+                    console.log('Sending WebSocket message:', messageToSend);
+                    ws.send(messageToSend);
+                    console.log('Form data sent via WebSocket:', formData);
+                    console.log('isPlaying set to:', isPlaying);
+                } else {
+                    console.error('WebSocket not ready. State:', ws.readyState);
+                }
+                
+                // Update form UI to disabled state first
+                updateFormUI();
+                
+                // Show success message
+                const successMessage = document.getElementById('successMessage');
+                successMessage.classList.remove('hidden');
+                
+                // Form submitted successfully - no redirect needed
+                
+            } catch (error) {
+                console.error('Error in form submission:', error);
+                alert('Terjadi kesalahan saat mengirim data. Silakan coba lagi.');
             }
-            
-            // Update form UI to disabled state first
-            updateFormUI();
-            
-            // Show success message
-            const successMessage = document.getElementById('successMessage');
-            successMessage.classList.remove('hidden');
-            
-            // Keep form visible but disabled to show submission state
-            // Form will be hidden when game over message is received
         });
         
         // Function to update form UI based on playing state
