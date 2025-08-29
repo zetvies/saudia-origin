@@ -383,13 +383,6 @@ style="
 
       // Game functions
       function startGame() {
-        // Check if user is already playing
-        if (isPlaying) {
-          console.error("User is already playing. Cannot start new game.");
-          alert("You are already playing a game. Please finish the current game first.");
-          return;
-        }
-        
         // Check if form data is available before starting
         if (!formData && !localStorage.getItem('formData')) {
           console.error("No form data available. Cannot start game.");
