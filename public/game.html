@@ -116,14 +116,7 @@ style="
       <p class="text-lg">
         Complete the city image by finding the missing piece!
       </p>
-      <div id="noFormDataMessage" class="hidden mt-[4svh] p-4 bg-yellow-100 border border-yellow-400 rounded-lg">
-        <p class="text-yellow-800 text-lg">
-          ⚠️ Please fill out the form first before starting the game.
-        </p>
-        <p class="text-yellow-700 text-sm mt-2">
-          Redirecting to form page in a few seconds...
-        </p>
-      </div>
+      
       <button
         id="startBtn"
         class="mt-[8svh] bg-saudia-green text-white px-8 py-4 rounded-2xl text-xl font-bold hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
@@ -383,17 +376,6 @@ style="
 
       // Game functions
       function startGame() {
-        // Check if form data is available before starting
-        if (!formData && !localStorage.getItem('formData')) {
-          console.error("No form data available. Cannot start game.");
-          alert("Please fill out the form first before starting the game.");
-          // Redirect to form page after alert
-          setTimeout(() => {
-            window.location.href = '/form';
-          }, 1000);
-          return;
-        }
-        
         // Load form data from localStorage if not already loaded
         if (!formData) {
           const savedFormData = localStorage.getItem('formData');
@@ -1108,13 +1090,7 @@ style="
         // Update start button state based on form data availability
         updateStartButtonState();
         
-        // If no form data is available, redirect to form after a delay
-        if (!formData && !localStorage.getItem('formData')) {
-          console.log('No form data available, redirecting to form page');
-          setTimeout(() => {
-            window.location.href = '/form';
-          }, 5000);
-        }
+
         
         // Scale container on initial load
         scaleContainer();
@@ -1122,28 +1098,14 @@ style="
 
       // Function to update start button state based on form data availability
       function updateStartButtonState() {
-        const hasFormData = formData || localStorage.getItem('formData');
+        startBtn.disabled = false;
+        startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        startBtn.textContent = 'Mulai Game';
         
-        if (hasFormData) {
-          startBtn.disabled = false;
-          startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-          startBtn.textContent = 'Mulai Game';
-          
-          // Hide the no form data message if it's visible
-          const noFormDataMessage = document.getElementById('noFormDataMessage');
-          if (noFormDataMessage) {
-            noFormDataMessage.classList.add('hidden');
-          }
-        } else {
-          startBtn.disabled = true;
-          startBtn.classList.add('opacity-50', 'cursor-not-allowed');
-          startBtn.textContent = 'Harap Isi Form Terlebih Dahulu';
-          
-          // Show the no form data message
-          const noFormDataMessage = document.getElementById('noFormDataMessage');
-          if (noFormDataMessage) {
-            noFormDataMessage.classList.remove('hidden');
-          }
+        // Hide the no form data message if it's visible
+        const noFormDataMessage = document.getElementById('noFormDataMessage');
+        if (noFormDataMessage) {
+          noFormDataMessage.classList.add('hidden');
         }
       }
 
