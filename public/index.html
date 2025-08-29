@@ -102,7 +102,7 @@
       >
         <div
           id="qrcode"
-          class="w-[20svh] h-[20svh] flex items-center justify-center"
+          class="w-[25svh] h-[25svh] flex items-center justify-center"
         ></div>
       </div>
 
@@ -212,8 +212,8 @@
         // Create QR code using QRCode.js
         new QRCode(qrCodeElement, {
           text: targetUrl,
-          width: 192,
-          height: 192,
+          width: 400,
+          height: 400,
           colorDark: "#006400",
           colorLight: "#FFFFFF",
           correctLevel: QRCode.CorrectLevel.H,

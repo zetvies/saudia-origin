@@ -116,6 +116,14 @@ style="
       <p class="text-lg">
         Complete the city image by finding the missing piece!
       </p>
+      <div id="noFormDataMessage" class="hidden mt-[4svh] p-4 bg-yellow-100 border border-yellow-400 rounded-lg">
+        <p class="text-yellow-800 text-lg">
+          ⚠️ Please fill out the form first before starting the game.
+        </p>
+        <p class="text-yellow-700 text-sm mt-2">
+          Redirecting to form page in a few seconds...
+        </p>
+      </div>
       <button
         id="startBtn"
         class="mt-[8svh] bg-saudia-green text-white px-8 py-4 rounded-2xl text-xl font-bold hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
@@ -169,7 +177,7 @@ style="
           Score: <span id="score">0</span>
         </div>
         <div class="font-bold text-saudia-green">
-          Time: <span id="gameTimer">60</span>s
+          Time: <span id="gameTimer">120</span>s
         </div>
       </div>
 
@@ -220,6 +228,31 @@ style="
         config.supabaseUrl,
         config.supabaseKey
       );
+      
+      // Test Supabase connection
+      console.log('Supabase client initialized:', {
+        url: config.supabaseUrl,
+        key: config.supabaseKey ? 'Present' : 'Missing',
+        client: !!supabaseClient
+      });
+      
+      // Chromium-specific: Test Supabase connection immediately
+      (async () => {
+        try {
+          const { data, error } = await supabaseClient
+            .from('saudia')
+            .select('count')
+            .limit(1);
+          
+          if (error) {
+            console.warn('Supabase connection test failed:', error);
+          } else {
+            console.log('✅ Supabase connection test successful');
+          }
+        } catch (err) {
+          console.warn('Supabase connection test error:', err);
+        }
+      })();
 
       // WebSocket connection
       const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -227,6 +260,17 @@ style="
       
       ws.onopen = function() {
         console.log("WebSocket connected from game page");
+        
+        // Chromium-specific: Test WebSocket connection
+        try {
+          ws.send(JSON.stringify({
+            type: 'ping',
+            timestamp: Date.now()
+          }));
+          console.log('✅ WebSocket ping sent successfully');
+        } catch (pingError) {
+          console.warn('⚠️ WebSocket ping failed:', pingError);
+        }
       };
       
       ws.onerror = function(error) {
@@ -243,8 +287,34 @@ style="
           console.log('Form submitted detected, starting game:', message.data);
           formData = message.data; // Store form data
           isPlaying = true; // Set playing state
-          console.log('Form data stored:', formData);
-          console.log('isPlaying set to:', isPlaying);
+          
+          // Save form data to localStorage for persistence (Chromium-optimized)
+          try {
+            localStorage.setItem('formData', JSON.stringify(formData));
+            console.log('Form data stored:', formData);
+            console.log('isPlaying set to:', isPlaying);
+            console.log('Form data saved to localStorage');
+            
+            // Verify storage was successful (Chromium-specific check)
+            const verifyStorage = localStorage.getItem('formData');
+            if (verifyStorage) {
+              console.log('✅ localStorage verification successful');
+            } else {
+              console.warn('⚠️ localStorage verification failed');
+            }
+          } catch (storageError) {
+            console.error('localStorage error:', storageError);
+            // Fallback: try to store in sessionStorage
+            try {
+              sessionStorage.setItem('formData', JSON.stringify(formData));
+              console.log('Form data saved to sessionStorage as fallback');
+            } catch (sessionError) {
+              console.error('sessionStorage also failed:', sessionError);
+            }
+          }
+          
+          // Update start button state to enable it
+          updateStartButtonState();
         }
       };
 
@@ -313,6 +383,33 @@ style="
 
       // Game functions
       function startGame() {
+        // Check if user is already playing
+        if (isPlaying) {
+          console.error("User is already playing. Cannot start new game.");
+          alert("You are already playing a game. Please finish the current game first.");
+          return;
+        }
+        
+        // Check if form data is available before starting
+        if (!formData && !localStorage.getItem('formData')) {
+          console.error("No form data available. Cannot start game.");
+          alert("Please fill out the form first before starting the game.");
+          // Redirect to form page after alert
+          setTimeout(() => {
+            window.location.href = '/form';
+          }, 1000);
+          return;
+        }
+        
+        // Load form data from localStorage if not already loaded
+        if (!formData) {
+          const savedFormData = localStorage.getItem('formData');
+          if (savedFormData) {
+            formData = JSON.parse(savedFormData);
+            console.log('Form data loaded from localStorage before starting game:', formData);
+          }
+        }
+        
         gameState = "countdown";
         startScreen.classList.add("hidden");
         countdownScreen.classList.remove("hidden");
@@ -335,6 +432,11 @@ style="
         gameState = "playing";
         countdownScreen.classList.add("hidden");
         gameScreen.classList.remove("hidden");
+
+        // Disable start button while playing
+        startBtn.disabled = true;
+        startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        startBtn.textContent = 'Sedang Bermain...';
 
         gameStartTime = Date.now();
         currentLevel = 1;
@@ -739,7 +841,7 @@ style="
         completedPiecesCount = 0;
         scoreSpan.textContent = score;
         currentLevelSpan.textContent = currentLevel;
-        gameTimerSpan.textContent = "60";
+        gameTimerSpan.textContent = "120";
         
         // Clear any existing game state
         const gameScreen = document.getElementById("gameScreen");
@@ -759,8 +861,8 @@ style="
 
       // Timer functions
       function startGameTimer() {
-        // Calculate remaining time from total 60 seconds
-        let timeLeft = 60 - totalTimeUsed;
+        // Calculate remaining time from total 120 seconds
+        let timeLeft = 120 - totalTimeUsed;
         gameTimerSpan.textContent = timeLeft;
 
         gameTimerInterval = setInterval(() => {
@@ -776,17 +878,40 @@ style="
       }
 
       function handleTimeout() {
-        // When timeout occurs, the remaining time becomes 0, so totalTimeUsed becomes 60
-        totalTimeUsed = 60;
+        // When timeout occurs, the remaining time becomes 0, so totalTimeUsed becomes 120
+        totalTimeUsed = 120;
         endGame();
       }
 
-      // Function to submit game data to Supabase
+      // Function to submit game data to Supabase (Chromium-optimized)
       async function submitGameDataToSupabase(score, remainingTime) {
         try {
+          console.log("=== SUPABASE SUBMISSION START ===");
+          console.log("Form data available:", !!formData);
+          console.log("Form data content:", formData);
+          
           if (!formData) {
             console.error("No form data available for Supabase submission");
-            return;
+            console.log("Attempting to load from storage...");
+            
+            // Try to load from localStorage as fallback
+            let savedFormData = localStorage.getItem('formData');
+            if (!savedFormData) {
+              savedFormData = sessionStorage.getItem('formData');
+            }
+            
+            if (savedFormData) {
+              try {
+                formData = JSON.parse(savedFormData);
+                console.log("Form data loaded from storage as fallback:", formData);
+              } catch (parseError) {
+                console.error("Error parsing saved form data:", parseError);
+                return;
+              }
+            } else {
+              console.error("No form data found in any storage");
+              return;
+            }
           }
 
           const gameData = {
@@ -799,31 +924,89 @@ style="
           };
 
           console.log("Submitting to Supabase:", gameData);
+          console.log("Supabase client available:", !!supabaseClient);
+          console.log("Supabase client details:", {
+            client: supabaseClient,
+            from: supabaseClient.from,
+            insert: supabaseClient.insert
+          });
 
-          const { data, error } = await supabaseClient
-            .from("saudia")
-            .insert([gameData]);
+          // Chromium-optimized: Add retry mechanism for network issues
+          let retryCount = 0;
+          const maxRetries = 3;
+          let success = false;
+          
+          while (retryCount < maxRetries && !success) {
+            try {
+              console.log(`Attempt ${retryCount + 1} of ${maxRetries} to submit to Supabase`);
+              
+              const { data, error } = await supabaseClient
+                .from("saudia")
+                .insert([gameData]);
 
-          if (error) {
-            console.error("Error submitting to Supabase:", error);
-          } else {
-            console.log("Successfully submitted to Supabase:", data);
-            // Reset playing state in localStorage after successful submission
-            localStorage.removeItem('formData');
-            console.log("Form data removed from localStorage after Supabase submission");
+              if (error) {
+                console.error(`Error submitting to Supabase (attempt ${retryCount + 1}):`, error);
+                console.error("Error details:", {
+                  message: error.message,
+                  details: error.details,
+                  hint: error.hint
+                });
+                
+                // Chromium-specific: Check if it's a network error that might be retryable
+                if (error.message && error.message.includes('fetch')) {
+                  console.log("Network error detected, will retry...");
+                  retryCount++;
+                  if (retryCount < maxRetries) {
+                    await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // Exponential backoff
+                    continue;
+                  }
+                }
+              } else {
+                console.log("Successfully submitted to Supabase:", data);
+                success = true;
+                
+                // Reset playing state in storage after successful submission
+                localStorage.removeItem('formData');
+                sessionStorage.removeItem('formData');
+                console.log("Form data removed from storage after Supabase submission");
+                break;
+              }
+            } catch (retryError) {
+              console.error(`Retry error (attempt ${retryCount + 1}):`, retryError);
+              retryCount++;
+              if (retryCount < maxRetries) {
+                await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+              }
+            }
+          }
+          
+          if (!success) {
+            console.error("Failed to submit to Supabase after all retry attempts");
           }
         } catch (error) {
           console.error("Error in submitGameDataToSupabase:", error);
+          console.error("Error stack:", error.stack);
         }
+        console.log("=== SUPABASE SUBMISSION END ===");
       }
 
       function endGame() {
+        console.log('=== ENDGAME FUNCTION CALLED ===');
+        console.log('Current game state:', gameState);
+        console.log('Current score:', score);
+        console.log('Current level:', currentLevel);
+        
         gameState = "gameOver";
         gameScreen.classList.add("hidden");
         gameOverScreen.classList.remove("hidden");
 
-        // Calculate remaining time from total 60 seconds
-        const remainingTime = 60 - totalTimeUsed;
+        // Reset start button state
+        startBtn.disabled = false;
+        startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        startBtn.textContent = 'Mulai Game';
+
+        // Calculate remaining time from total 120 seconds
+        const remainingTime = 120 - totalTimeUsed;
 
         finalScore.textContent = score;
         gameDuration.textContent = remainingTime;
@@ -847,7 +1030,20 @@ style="
         console.log("isPlaying set to:", isPlaying);
 
         // Submit game data to Supabase
-        submitGameDataToSupabase(score, remainingTime);
+        // Ensure form data is loaded before submission
+        if (!formData) {
+          const savedFormData = localStorage.getItem('formData');
+          if (savedFormData) {
+            formData = JSON.parse(savedFormData);
+            console.log('Form data loaded from localStorage before Supabase submission:', formData);
+          }
+        }
+        
+        if (formData) {
+          submitGameDataToSupabase(score, remainingTime);
+        } else {
+          console.error('No form data available for Supabase submission');
+        }
 
         // Send WebSocket signal to form.html
         if (ws && ws.readyState === WebSocket.OPEN) {
@@ -881,16 +1077,82 @@ style="
       document.addEventListener("DOMContentLoaded", () => {
         // Game will start when start button is clicked
         
-        // Load form data from localStorage if available
-        const savedFormData = localStorage.getItem('formData');
+        // Load form data from localStorage if available (Chromium-optimized)
+        let savedFormData = localStorage.getItem('formData');
+        console.log('Checking localStorage for form data:', savedFormData);
+        
+        // Chromium fallback: check sessionStorage if localStorage is empty
+        if (!savedFormData) {
+          savedFormData = sessionStorage.getItem('formData');
+          console.log('Checking sessionStorage for form data:', savedFormData);
+        }
+        
         if (savedFormData) {
-          formData = JSON.parse(savedFormData);
-          console.log('Form data loaded from localStorage in game page:', formData);
+          try {
+            formData = JSON.parse(savedFormData);
+            console.log('Form data loaded from storage in game page:', formData);
+            isPlaying = true; // Set playing state if form data exists
+            
+            // Chromium-specific: verify the loaded data is valid
+            if (formData && typeof formData === 'object' && formData.nama) {
+              console.log('✅ Form data validation successful');
+            } else {
+              console.warn('⚠️ Form data validation failed, clearing invalid data');
+              localStorage.removeItem('formData');
+              sessionStorage.removeItem('formData');
+              formData = null;
+              isPlaying = false;
+            }
+          } catch (error) {
+            console.error('Error parsing form data from storage:', error);
+            localStorage.removeItem('formData'); // Clear corrupted data
+            sessionStorage.removeItem('formData');
+          }
+        } else {
+          console.log('No form data found in any storage');
+        }
+        
+        // Update start button state based on form data availability
+        updateStartButtonState();
+        
+        // If no form data is available, redirect to form after a delay
+        if (!formData && !localStorage.getItem('formData')) {
+          console.log('No form data available, redirecting to form page');
+          setTimeout(() => {
+            window.location.href = '/form';
+          }, 5000);
         }
         
         // Scale container on initial load
         scaleContainer();
       });
+
+      // Function to update start button state based on form data availability
+      function updateStartButtonState() {
+        const hasFormData = formData || localStorage.getItem('formData');
+        
+        if (hasFormData) {
+          startBtn.disabled = false;
+          startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+          startBtn.textContent = 'Mulai Game';
+          
+          // Hide the no form data message if it's visible
+          const noFormDataMessage = document.getElementById('noFormDataMessage');
+          if (noFormDataMessage) {
+            noFormDataMessage.classList.add('hidden');
+          }
+        } else {
+          startBtn.disabled = true;
+          startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+          startBtn.textContent = 'Harap Isi Form Terlebih Dahulu';
+          
+          // Show the no form data message
+          const noFormDataMessage = document.getElementById('noFormDataMessage');
+          if (noFormDataMessage) {
+            noFormDataMessage.classList.remove('hidden');
+          }
+        }
+      }
 
       // Function to scale container by window dimensions
       function scaleContainer() {
