@@ -610,6 +610,9 @@ style="
         console.log("Answers container:", answersContainer);
         answersContainer.innerHTML = "";
 
+        // Create all answers first (both correct and wrong)
+        const allAnswers = [];
+
         // Create 3 correct answers (the missing pieces)
         // Ensure each answer is mapped to its correct missing position
         for (let i = 0; i < missingPositions.length; i++) {
@@ -631,7 +634,7 @@ style="
             element: correctAnswer,
             dataset: correctAnswer.dataset
           });
-          answersContainer.appendChild(correctAnswer);
+          allAnswers.push(correctAnswer);
         }
 
         // Create 5 wrong answers from other cities
@@ -657,7 +660,16 @@ style="
           const randomImage = getRandomImage(city);
           const wrongAnswer = createDraggableAnswer(city, randomImage, false, -1);
           console.log("Wrong answer created for", city, ":", wrongAnswer);
-          answersContainer.appendChild(wrongAnswer);
+          allAnswers.push(wrongAnswer);
+        });
+
+        // Shuffle all answers to randomize their positions
+        const shuffledAnswers = shuffleArray(allAnswers);
+        console.log("Answers shuffled:", shuffledAnswers.length, "total answers");
+
+        // Add shuffled answers to the container
+        shuffledAnswers.forEach(answer => {
+          answersContainer.appendChild(answer);
         });
 
         console.log(
