@@ -151,8 +151,8 @@
               <div class="text-[2.4svh] text-saudia-green mb-6">
                 Waktu Tersisa: <span id="gameDuration" class="font-bold">0</span> detik
               </div>
-              <p class="text-[2svh] text-saudia-green/70">
-                Game selesai! Anda dapat mengisi form lagi untuk bermain ulang.
+              <p class="text-[2svh] text-saudia-green/70 mb-6">
+                Silakan main lagi dalam beberapa jam.
               </p>
         </div>
 
@@ -219,7 +219,7 @@
                              email: formData.email,
                              whatsapp: formData.whatsapp,
                              gender: formData.gender,
-                             "time-remaining": "120",
+                             "time-remaining": "0",
                              score: "0"
                          }
                      ]);
@@ -306,20 +306,14 @@
             isPlaying = false;
             console.log('Game over: isPlaying reset to false');
             
-                         // Clear form data since game is over
-             formData = null;
+            // Clear form data since game is over
+            formData = null;
             
-            // Update form UI to enabled state
-            updateFormUI();
-            
-            // Show the form again (now enabled) and hide success message
+            // Hide the form and success message
             const form = document.getElementById('contactForm');
             const successMessage = document.getElementById('successMessage');
-            form.classList.remove('hidden');
+            form.classList.add('hidden');
             successMessage.classList.add('hidden');
-            
-            // Reset form fields
-            form.reset();
             
             // Update game over screen with actual data
             document.getElementById('finalScore').textContent = gameData.score;

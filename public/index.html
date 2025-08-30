@@ -6,6 +6,8 @@
     <title>Saudia QR Code</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="./config.js"></script>
     <style>
       @font-face {
         font-family: 'SaudiaSans';
@@ -53,6 +55,15 @@
       body {
         font-family: 'SaudiaSans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       }
+
+      @keyframes marquee {
+        0% {
+          transform: translateX(0);
+        }
+        100% {
+          transform: translateX(-100%);
+        }
+      }
     </style>
     <script>
       tailwind.config = {
@@ -95,7 +106,7 @@
         </div>
     </div>
     <div
-      class="text-center flex bg-white/90 backdrop-blur-md rounded-3xl p-[3svh] gap-[2svh] shadow-2xl border-2 border-saudia-green/20 max-w-lg w-full relative z-20 mb-[5svh]"
+      class="text-center flex bg-white/90 backdrop-blur-md rounded-3xl p-[3svh] gap-[2svh] shadow-2xl border-2 border-saudia-green/20 max-w-lg w-full relative z-20 mb-[2svh]"
     >
       <div
         class="bg-white p-[2svh] rounded-2xl shadow-lg border-2 border-saudia-green/20 inline-block"
@@ -124,9 +135,135 @@
         </div> -->
       </div>
     </div>
+
+    <!-- Leaderboard Container -->
+    <div
+      class="text-center bg-white/90 backdrop-blur-md rounded-3xl py-[3svh] shadow-2xl border-2 border-saudia-green/20 max-w-lg w-full relative z-20 mb-[5svh]"
+    >
+      <div class="flex flex-col items-center text-center w-full justify-center">
+        <!-- <div class="flex items-center justify-between w-full mb-2 px-[3svh]">
+          <h3 class="font-bold text-saudia-green/70 text-[2.4svh]">
+            🏆 Leaderboard
+          </h3>
+        </div> -->
+        
+        <div class="w-full">
+          <div 
+            style="
+              width: 100%;
+              height: 3svh;
+              white-space: nowrap;
+              overflow: hidden;
+              position: relative;
+            "
+          >
+            <div
+              id="leaderboard"
+              style="
+                display: inline-block;
+                animation: marquee 20s linear infinite;
+                padding-left: 100%;
+                font-size: 2.5svh;
+              "
+            >Loading leaderboard...</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
     <script>
+      // Initialize Supabase client
+      const supabaseClient = supabase.createClient(
+        config.supabaseUrl,
+        config.supabaseKey
+      );
+
+      // Function to fetch and display leaderboard
+      async function fetchLeaderboard() {
+        try {
+          console.log("Fetching leaderboard from Supabase...");
+          
+          // First, let's test the connection and see what fields are available
+          const { data: testData, error: testError } = await supabaseClient
+            .from("saudia")
+            .select("*")
+            .limit(1);
+
+          if (testError) {
+            console.error("Test query error:", testError);
+            document.getElementById("leaderboard").textContent = `Error: ${testError.message}`;
+            return;
+          }
+
+          console.log("Test query successful, available fields:", testData);
+          
+          // Now try to get the actual leaderboard data - use proper Supabase ordering
+          const { data, error } = await supabaseClient
+            .from("saudia")
+            .select("*")
+            .order("score", { ascending: false })
+            .limit(100); // Fetch top 100 by score to ensure we get the actual top scores
+
+          if (error) {
+            console.error("Leaderboard query error:", error);
+            document.getElementById("leaderboard").textContent = `Error: ${error.message}`;
+            return;
+          }
+
+          console.log("Leaderboard data received:", data);
+
+          if (data && data.length > 0) {
+            // Sort data by score (highest first), then by time remaining (highest first) as tiebreaker
+            const sortedData = data.sort((a, b) => {
+              const scoreA = parseInt(a.score || 0);
+              const scoreB = parseInt(b.score || 0);
+              
+              // First sort by score (descending)
+              if (scoreA !== scoreB) {
+                return scoreB - scoreA;
+              }
+              
+              // If scores are equal, sort by time remaining (descending)
+              const timeA = parseInt(a["time-remaining"] || 0);
+              const timeB = parseInt(b["time-remaining"] || 0);
+              return timeB - timeA;
+            });
+            
+            console.log("Sorted leaderboard data:", sortedData);
+            
+            // Take only the top 10 after sorting
+            const top10Data = sortedData.slice(0, 10);
+            console.log("Top 10 leaderboard data:", top10Data);
+            
+            // Format the leaderboard data as scrolling text (like Popmart)
+            const leaderboardText = top10Data
+              .map((entry, index) => {
+                const rank = index + 1;
+                const emoji = rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `#${rank}`;
+                
+                // Handle different possible field names
+                const name = entry.nama || entry.name || entry.player_name || "Anonymous";
+                const score = entry.score || entry.points || 0;
+                const timeRemaining = entry["time-remaining"] || entry.time_remaining || entry.remaining_time || "N/A";
+                
+                return `${emoji} ${name}: ${score} pts (${timeRemaining}s)`;
+              })
+              .join(" - ");
+
+            document.getElementById("leaderboard").textContent = leaderboardText;
+          } else {
+            document.getElementById("leaderboard").textContent = "Belum ada data leaderboard hari ini";
+          }
+        } catch (error) {
+          console.error("Error fetching leaderboard:", error);
+          document.getElementById("leaderboard").textContent = `Error: ${error.message}`;
+        }
+      }
+
+      // Auto-refresh leaderboard every 30 seconds
+      setInterval(fetchLeaderboard, 30000);
+
       // WebSocket connection for form submission detection - automatically detect protocol
       const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const ws = new WebSocket(`${wsProtocol}//${window.location.host}`);
@@ -221,6 +358,9 @@
 
         // Scale container on initial load
         scaleContainer();
+
+        // Fetch leaderboard on page load
+        fetchLeaderboard();
       });
 
       // Scale container on window resize
