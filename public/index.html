@@ -136,40 +136,41 @@
       </div>
     </div>
 
-    <!-- Leaderboard Container -->
-    <div
-      class="text-center bg-white/90 backdrop-blur-md rounded-3xl py-[3svh] shadow-2xl border-2 border-saudia-green/20 max-w-lg w-full relative z-20 mb-[5svh]"
-    >
-      <div class="flex flex-col items-center text-center w-full justify-center">
-        <!-- <div class="flex items-center justify-between w-full mb-2 px-[3svh]">
-          <h3 class="font-bold text-saudia-green/70 text-[2.4svh]">
-            🏆 Leaderboard
-          </h3>
-        </div> -->
-        
-        <div class="w-full">
-          <div 
-            style="
-              width: 100%;
-              height: 3svh;
-              white-space: nowrap;
-              overflow: hidden;
-              position: relative;
-            "
-          >
-            <div
-              id="leaderboard"
-              style="
-                display: inline-block;
-                animation: marquee 20s linear infinite;
-                padding-left: 100%;
-                font-size: 2.5svh;
-              "
-            >Loading leaderboard...</div>
-          </div>
-        </div>
-      </div>
-    </div>
+         <!-- Leaderboard Container -->
+     <div
+       class="text-center bg-white/90 backdrop-blur-md rounded-3xl py-[3svh] shadow-2xl border-2 border-saudia-green/20 max-w-lg w-full relative z-20 mb-[5svh]"
+     >
+       <div class="flex flex-col items-center text-center w-full justify-center">
+
+         <div class="w-full">
+           <div 
+             style="
+               width: 100%;
+               height: 3svh;
+               white-space: nowrap;
+               overflow: hidden;
+               position: relative;
+             "
+           >
+             <div
+               id="leaderboard"
+               style="
+                 display: inline-block;
+                 animation: marquee 20s linear infinite;
+                 padding-left: 100%;
+                 font-size: 2.5svh;
+               "
+             >Loading leaderboard...</div>
+           </div>
+         </div>
+         
+       </div>
+
+     </div>
+                           <!-- Connection Status Indicator -->
+              <div class="absolute bottom-8 left-8">
+               <div id="connectionStatus" class="w-3 h-3 rounded-full bg-green-500"></div>
+             </div>
   </div>
 
     <script>
@@ -251,27 +252,119 @@
               })
               .join(" - ");
 
-            document.getElementById("leaderboard").textContent = leaderboardText;
-          } else {
-            document.getElementById("leaderboard").textContent = "Belum ada data leaderboard hari ini";
-          }
+                                      document.getElementById("leaderboard").textContent = leaderboardText;
+           } else {
+                           document.getElementById("leaderboard").textContent = "Belum ada data leaderboard hari ini";
+           }
         } catch (error) {
           console.error("Error fetching leaderboard:", error);
           document.getElementById("leaderboard").textContent = `Error: ${error.message}`;
         }
       }
 
-      // Auto-refresh leaderboard every 30 seconds
-      setInterval(fetchLeaderboard, 30000);
+             
+       
+               // Ping mechanism to keep connection alive and refresh data
+        let pingInterval;
+        let reconnectAttempts = 0;
+        const MAX_RECONNECT_ATTEMPTS = 5;
+        let connectionTimeout;
+        const CONNECTION_TIMEOUT = 120000; // 2 minutes without connection = refresh page
+       
+               function startPing() {
+          pingInterval = setInterval(() => {
+            if (ws.readyState === WebSocket.OPEN) {
+              // Send ping message to keep WebSocket connection alive
+              ws.send(JSON.stringify({ type: "ping", timestamp: Date.now() }));
+              console.log("Ping sent to server to keep connection alive");
+            } else {
+              console.log("WebSocket not open, attempting to reconnect...");
+              reconnectWebSocket();
+            }
+          }, 45000); // Ping every 45 seconds to maintain WebSocket connection
+        }
+       
+               function reconnectWebSocket() {
+          if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+            console.error("Max reconnection attempts reached, refreshing page...");
+            clearInterval(pingInterval);
+            
+            // Show notification before refresh
+            showNotification("Connection lost. Refreshing page...");
+            
+            // Refresh the page after 2 seconds
+            setTimeout(() => {
+              window.location.reload();
+            }, 2000);
+            return;
+          }
+          
+          reconnectAttempts++;
+          console.log(`Reconnection attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`);
+          
+          // Close existing connection if any
+          if (ws.readyState !== WebSocket.CLOSED) {
+            ws.close();
+          }
+          
+          // Wait a bit before reconnecting
+          setTimeout(() => {
+            initWebSocket();
+          }, 2000 * reconnectAttempts); // Exponential backoff
+        }
+       
+       function initWebSocket() {
+         const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+         const newWs = new WebSocket(`${wsProtocol}//${window.location.host}`);
+         
+                   newWs.onopen = function () {
+            console.log("WebSocket reconnected successfully");
+            reconnectAttempts = 0; // Reset counter on successful connection
+            ws = newWs; // Update the global ws reference
+            
+            // Clear connection timeout since we're reconnected
+            if (connectionTimeout) {
+              clearTimeout(connectionTimeout);
+              connectionTimeout = null;
+            }
+            
+            // Restart ping mechanism
+            if (pingInterval) {
+              clearInterval(pingInterval);
+            }
+            startPing();
+          };
+         
+         newWs.onmessage = ws.onmessage; // Keep the same message handler
+         newWs.onerror = ws.onerror; // Keep the same error handler
+         newWs.onclose = function () {
+           console.log("WebSocket disconnected during reconnection");
+           if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+             reconnectWebSocket();
+           }
+         };
+       }
 
       // WebSocket connection for form submission detection - automatically detect protocol
       const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
       const ws = new WebSocket(`${wsProtocol}//${window.location.host}`);
 
-      ws.onopen = function () {
-        console.log("WebSocket connected to index page");
-        console.log("WebSocket readyState:", ws.readyState);
-      };
+             ws.onopen = function () {
+         console.log("WebSocket connected to index page");
+         console.log("WebSocket readyState:", ws.readyState);
+         
+         // Update connection status
+         updateConnectionStatus('connected');
+         
+         // Clear connection timeout since we're connected
+         if (connectionTimeout) {
+           clearTimeout(connectionTimeout);
+           connectionTimeout = null;
+         }
+         
+         // Start ping mechanism after successful connection
+         startPing();
+       };
 
       ws.onmessage = function (event) {
         console.log("WebSocket message received in index.html:", event.data);
@@ -298,38 +391,71 @@
         }
       };
 
-      ws.onerror = function (error) {
-        console.error("WebSocket error:", error);
-      };
+             ws.onerror = function (error) {
+         console.error("WebSocket error:", error);
+         updateConnectionStatus('error');
+       };
 
-      ws.onclose = function () {
-        console.log("WebSocket disconnected from index page");
-      };
+       ws.onclose = function () {
+         console.log("WebSocket disconnected from index page");
+         updateConnectionStatus('disconnected');
+         
+         // Start connection timeout - if we can't reconnect in 2 minutes, refresh page
+         if (!connectionTimeout) {
+           connectionTimeout = setTimeout(() => {
+             console.log("Connection timeout reached, refreshing page...");
+             showNotification("Connection timeout. Refreshing page...");
+             window.location.reload();
+           }, CONNECTION_TIMEOUT);
+         }
+       };
 
-      // Function to show notification
-      function showNotification(message) {
-        // Create notification element
-        const notification = document.createElement("div");
-        notification.className =
-          "fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full";
-        notification.textContent = message;
+             // Function to show notification
+       function showNotification(message) {
+         // Create notification element
+         const notification = document.createElement("div");
+         notification.className =
+           "fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-x-full";
+         notification.textContent = message;
 
-        // Add to page
-        document.body.appendChild(notification);
+         // Add to page
+         document.body.appendChild(notification);
 
-        // Animate in
-        setTimeout(() => {
-          notification.classList.remove("translate-x-full");
-        }, 100);
+         // Animate in
+         setTimeout(() => {
+           notification.classList.remove("translate-x-full");
+         }, 100);
 
-        // Remove after 3 seconds
-        setTimeout(() => {
-          notification.classList.add("translate-x-full");
-          setTimeout(() => {
-            document.body.removeChild(notification);
-          }, 300);
-        }, 3000);
-      }
+         // Remove after 3 seconds
+         setTimeout(() => {
+           notification.classList.add("translate-x-full");
+           setTimeout(() => {
+             document.body.removeChild(notification);
+           }, 300);
+         }, 3000);
+       }
+       
+
+       
+               // Function to update connection status
+        function updateConnectionStatus(status) {
+          const statusElement = document.getElementById('connectionStatus');
+          
+          switch(status) {
+            case 'connected':
+              statusElement.className = 'w-3 h-3 rounded-full bg-green-500';
+              break;
+            case 'connecting':
+              statusElement.className = 'w-3 h-3 rounded-full bg-yellow-500';
+              break;
+            case 'disconnected':
+              statusElement.className = 'w-3 h-3 rounded-full bg-red-500';
+              break;
+            case 'error':
+              statusElement.className = 'w-3 h-3 rounded-full bg-red-500';
+              break;
+          }
+        }
 
       // Function to scale container by window dimensions
       function scaleContainer() {
